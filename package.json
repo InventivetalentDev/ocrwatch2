@@ -17,6 +17,11 @@
     "email": "mail@inventivetalent.org"
   },
   "license": "MIT",
+  "iohook": {
+    "targets": {
+
+    }
+  },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.5",
     "@electron-forge/maker-deb": "^6.0.5",
@@ -40,6 +45,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
-    "jimp": "^0.22.4"
+    "jimp": "^0.22.4",
+    "iohook": "https://github.com/MystK/iohook.git#latest-electron-node"
   }
 }

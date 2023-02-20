@@ -15,9 +15,9 @@ export async function init() {
             }
         });
         await renderWindow.loadURL(RENDER_OFFSCREEN_WEBPACK_ENTRY);
-        renderWindow.webContents.on('paint', (event, dirty, image) => {
-            fs.writeFileSync('ex.png', image.toPNG())
-        })
+        // renderWindow.webContents.on('paint', (event, dirty, image) => {
+        //     fs.writeFileSync('ex.png', image.toPNG())
+        // })
         renderWindow.webContents.setFrameRate(1);
         renderWindow.webContents.openDevTools();
         renderWindow.minimize();

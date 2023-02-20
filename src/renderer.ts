@@ -29,12 +29,16 @@
 import './index.css';
 
 import {desktopCapturer, ipcRenderer} from 'electron';
+import {Coordinates} from "./coordinates";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
 setTimeout(() => {
     ipcRenderer.send('initVideo');
-}, 100);
+}, 1000);
+setTimeout(() => {
+    ipcRenderer.send('takeScreenshot');
+}, 1200);
 
 const imageTypes: Set<string> = new Set<string>();
 
@@ -43,10 +47,31 @@ document.getElementById('screenshotBtn').addEventListener('click', e => {
     ipcRenderer.send('takeScreenshot');
 });
 
-(document.getElementById('imageSelect') as HTMLSelectElement).addEventListener('click', e => {
-    document.querySelectorAll('.image-content').forEach(e => (e as HTMLElement).style.display = 'none');
-    document.getElementById('img-' + (e.currentTarget as HTMLSelectElement).value).style.display = '';
+const imageSelect = document.getElementById('imageSelect') as HTMLSelectElement;
+
+imageSelect.addEventListener('click', e => {
+    // document.querySelectorAll('.image-content').forEach(e => (e as HTMLElement).style.display = 'none');
+    // document.getElementById('img-' + (e.currentTarget as HTMLSelectElement).value).style.display = '';
+
+    updatePreview();
 });
+
+function updatePreview() {
+    const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
+    const canvas = document.getElementById('screenshotCanvas') as HTMLCanvasElement;
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    //TODO: toggle
+    ctx.strokeStyle = 'blue';
+    ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
+        Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
+    ctx.strokeStyle = 'red';
+    ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
+        Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+}
 
 // ipcRenderer.on('screenshotContent', async (event, sourceId) => {
 //     console.log("source",sourceId)

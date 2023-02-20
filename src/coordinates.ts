@@ -6,11 +6,13 @@ export class Coordinates {
     static scoreboard = {
         allies: {
             from: [312, 193],
-            to: [1160, 500]
+            to: [1160, 500],
+            size: [848, 307]
         },
         enemies: {
             from: [312, 613],
-            to: [1160, 920]
+            to: [1160, 920],
+            size: [848, 307]
         }
     }
 }

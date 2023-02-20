@@ -21,6 +21,7 @@ async function createVideo(sourceId: string) {
         audio: false,
         video: {
             mandatory: {
+                cursor: 'never',
                 chromeMediaSource: 'desktop',
                 chromeMediaSourceId: sourceId,
                 minWidth: 1280,

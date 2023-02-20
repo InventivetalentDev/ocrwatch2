@@ -5,7 +5,7 @@ body {
     padding: 2rem;
 }
 
-.image-content {
+.image-content, canvas {
     max-width: 100%;
-
+max-height: 100%;
 }
