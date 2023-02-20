@@ -29,6 +29,7 @@ const createWindow = async (): Promise<void> => {
             contextIsolation: false,
         },
     });
+    mainWindow.webContents.setFrameRate(1);
 
 
     // globalShortcut.register('Tab',()=>{

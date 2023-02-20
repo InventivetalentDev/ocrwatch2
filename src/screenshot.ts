@@ -50,7 +50,7 @@ export function takeScreenshot(): Promise<string> {
     renderWindow.webContents.send('takeScreenshot');
 
     return new Promise(resolve => {
-        ipcMain.on('screenshotContent', (e, screenshot) => {
+        ipcMain.once('screenshotContent', (e, screenshot) => {
             resolve(screenshot);
         })
     })
