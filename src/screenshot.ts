@@ -3,16 +3,18 @@ import * as fs from "fs";
 
 declare const RENDER_OFFSCREEN_WEBPACK_ENTRY: string;
 
-export function init() {
-    app.whenReady().then(() => {
-        const renderWindow = new BrowserWindow({
+let renderWindow: BrowserWindow;
+
+export async function init() {
+    app.whenReady().then(async () => {
+        renderWindow = new BrowserWindow({
             webPreferences: {
                 offscreen: true,
                 nodeIntegration: true,
                 contextIsolation: false,
             }
         });
-        renderWindow.loadURL(RENDER_OFFSCREEN_WEBPACK_ENTRY);
+        await renderWindow.loadURL(RENDER_OFFSCREEN_WEBPACK_ENTRY);
         renderWindow.webContents.on('paint', (event, dirty, image) => {
             fs.writeFileSync('ex.png', image.toPNG())
         })
@@ -32,13 +34,24 @@ export function init() {
 
         ipcMain.on('screenshotContent', (e, screenshot) => {
             console.log("screenshotContent")
-            BrowserWindow.getFocusedWindow().webContents.send('screenshotContent', screenshot);
+            let focusedWindow = BrowserWindow.getFocusedWindow();
+            if (!focusedWindow) return;
+            focusedWindow.webContents.send('screenshotContent', screenshot);
         })
 
         ipcMain.on('takeScreenshot', (e) => {
-            console.log("takeScreenshot")
-            renderWindow.webContents.send('takeScreenshot');
-
+            takeScreenshot();
         });
+    })
+}
+
+export function takeScreenshot(): Promise<string> {
+    console.log("takeScreenshot")
+    renderWindow.webContents.send('takeScreenshot');
+
+    return new Promise(resolve => {
+        ipcMain.on('screenshotContent', (e, screenshot) => {
+            resolve(screenshot);
+        })
     })
 }

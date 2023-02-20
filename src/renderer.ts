@@ -32,18 +32,42 @@ import {desktopCapturer, ipcRenderer} from 'electron';
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
-document.getElementById('screenshotBtn').addEventListener('click',e=>{
+setTimeout(() => {
+    ipcRenderer.send('initVideo');
+}, 100);
+
+const imageTypes: Set<string> = new Set<string>();
+
+document.getElementById('screenshotBtn').addEventListener('click', e => {
     console.log("screenshotBtn takeScreenshot")
     ipcRenderer.send('takeScreenshot');
-})
-
-document.getElementById('initBtn').addEventListener('click',e=>{
-    console.log("initBtn initVideo")
-    ipcRenderer.send('initVideo');
-})
-
-
-ipcRenderer.on('screenshotContent', async (event, sourceId) => {
-    console.log("source",sourceId)
-    document.getElementById('screenshotPreview').src = sourceId
 });
+
+(document.getElementById('imageSelect') as HTMLSelectElement).addEventListener('click', e => {
+    document.querySelectorAll('.image-content').forEach(e => (e as HTMLElement).style.display = 'none');
+    document.getElementById('img-' + (e.currentTarget as HTMLSelectElement).value).style.display = '';
+});
+
+// ipcRenderer.on('screenshotContent', async (event, sourceId) => {
+//     console.log("source",sourceId)
+//     document.getElementById('screenshotPreview').src = sourceId
+// });
+
+ipcRenderer.on('imageContent', async (event, imageType, content) => {
+    let element = document.getElementById(`img-${imageType}`) as HTMLImageElement;
+    if (!element) {
+        element = document.createElement('img') as HTMLImageElement;
+        element.className = 'image-content';
+        element.id = `img-${imageType}`;
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        imageTypes.add(imageType);
+        const select = (document.getElementById('imageSelect') as HTMLSelectElement);
+        const option = document.createElement('option') as HTMLOptionElement;
+        option.value = imageType;
+        option.text = imageType;
+        select.appendChild(option);
+    }
+    element.src = content;
+})
