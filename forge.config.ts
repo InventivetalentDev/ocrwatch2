@@ -26,6 +26,11 @@ const config: ForgeConfig = {
               js: './src/preload.ts',
             },
           },
+          {
+            html: './src/render/offscreen.html',
+            js: './src/render/offscreen.ts',
+            name: 'render_offscreen'
+          },
         ],
       },
     }),

@@ -28,4 +28,22 @@
 
 import './index.css';
 
+import {desktopCapturer, ipcRenderer} from 'electron';
+
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
+
+document.getElementById('screenshotBtn').addEventListener('click',e=>{
+    console.log("screenshotBtn takeScreenshot")
+    ipcRenderer.send('takeScreenshot');
+})
+
+document.getElementById('initBtn').addEventListener('click',e=>{
+    console.log("initBtn initVideo")
+    ipcRenderer.send('initVideo');
+})
+
+
+ipcRenderer.on('screenshotContent', async (event, sourceId) => {
+    console.log("source",sourceId)
+    document.getElementById('screenshotPreview').src = sourceId
+});
