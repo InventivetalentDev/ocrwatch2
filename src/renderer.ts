@@ -50,15 +50,17 @@ document.getElementById('screenshotBtn').addEventListener('click', e => {
 const imageSelect = document.getElementById('imageSelect') as HTMLSelectElement;
 
 imageSelect.addEventListener('click', e => {
-    // document.querySelectorAll('.image-content').forEach(e => (e as HTMLElement).style.display = 'none');
-    // document.getElementById('img-' + (e.currentTarget as HTMLSelectElement).value).style.display = '';
-
+    updatePreview();
+});
+imageSelect.addEventListener('change', e => {
     updatePreview();
 });
 
+const canvas = document.getElementById('screenshotCanvas') as HTMLCanvasElement;
+
 function updatePreview() {
     const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
-    const canvas = document.getElementById('screenshotCanvas') as HTMLCanvasElement;
+
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext('2d');
@@ -71,6 +73,17 @@ function updatePreview() {
     ctx.strokeStyle = 'red';
     ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
         Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+
+    ctx.strokeStyle = 'green';
+    ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
+        Coordinates.self.name.size[0], Coordinates.self.name.size[1])
+    ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
+        Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
+
+    ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
+        Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
+    ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
+        Coordinates.match.time.size[0], Coordinates.match.time.size[1])
 }
 
 // ipcRenderer.on('screenshotContent', async (event, sourceId) => {
@@ -78,7 +91,14 @@ function updatePreview() {
 //     document.getElementById('screenshotPreview').src = sourceId
 // });
 
+const screenshotStatus = document.getElementById('screenshotStatus');
+ipcRenderer.on('takingScreenshot',e=>{
+    screenshotStatus.textContent = "Taking screenshot";
+})
+
 ipcRenderer.on('imageContent', async (event, imageType, content) => {
+    screenshotStatus.textContent = "Got new screenshot";
+
     let element = document.getElementById(`img-${imageType}`) as HTMLImageElement;
     if (!element) {
         element = document.createElement('img') as HTMLImageElement;
@@ -95,4 +115,9 @@ ipcRenderer.on('imageContent', async (event, imageType, content) => {
         select.appendChild(option);
     }
     element.src = content;
+
+    // wait for new image content to load before re-drawing
+    setTimeout(() => {
+        updatePreview();
+    }, 200);
 })

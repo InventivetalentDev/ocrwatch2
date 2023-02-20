@@ -15,4 +15,24 @@ export class Coordinates {
             size: [848, 307]
         }
     }
+    static self = {
+        name: {
+            from: [170, 950],
+            size: [250, 50]
+        },
+        hero: {
+            from: [1190, 350],
+            size: [280, 60]
+        }
+    }
+    static match = {
+        wrapper: {
+            from: [120, 30],
+            size: [700, 30]
+        },
+        time: {
+            from: [188,60],
+            size: [100,35]
+        }
+    }
 }

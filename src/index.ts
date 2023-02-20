@@ -59,6 +59,7 @@ const createWindow = async (): Promise<void> => {
 
 async function loop(mainWindow: BrowserWindow) {
     try {
+        mainWindow.webContents.send('takingScreenshot');
         const screenshot = await takeScreenshot();
         const jmp = await Jimp.read(Buffer.from(screenshot.substring('data:image/png;base64,'.length), 'base64'));
 

@@ -26,8 +26,14 @@ export async function processScreenshot(jmp: Jimp, mainWindow: BrowserWindow) {
         .crop(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
             Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
     await processPlayerList('enemies', enemiesListImg, mainWindow);
+
+    await processSelf(contrast.clone(), mainWindow);
 }
 
 async function processPlayerList(type: 'allies' | 'enemies', jmp: Jimp, mainWindow: BrowserWindow) {
+    //TODO
+}
 
+async function processSelf(jmp: Jimp, mainWindow: BrowserWindow) {
+    //TODO
 }
