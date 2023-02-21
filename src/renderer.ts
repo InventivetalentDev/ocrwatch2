@@ -30,6 +30,9 @@ import './index.css';
 
 import {desktopCapturer, ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
+import {createWorker, Worker} from "tesseract.js";
+import Jimp from "jimp";
+import {Rect} from "./types";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -77,14 +80,82 @@ function updatePreview() {
     ctx.strokeStyle = 'green';
     ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
         Coordinates.self.name.size[0], Coordinates.self.name.size[1])
+    ocr(canvas, Coordinates.self.name as Rect, 'self-name');
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
+    ocr(canvas, Coordinates.self.hero as Rect, 'self-hero');
 
     ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
         Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
+    ctx.strokeStyle = 'gold';
     ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
         Coordinates.match.time.size[0], Coordinates.match.time.size[1])
+    ocr(canvas, Coordinates.match.time as Rect, 'match-time');
+
+
 }
+
+const workerPool: Worker[] = [];
+let workerIndex = 0;
+const workerBusys: Map<string, boolean> = new Map<string, boolean>();
+
+for (let i = 0; i < 10; i++) {
+    (async () => {
+        const worker = await createWorker({
+            logger: m => console.log(m),
+        });
+        await worker.load();
+        await worker.loadLanguage('eng');
+        await worker.initialize('eng');
+        workerPool[i] = worker;
+    })();
+}
+
+async function ocr(canvas: HTMLCanvasElement, rect: Rect, id: string) {
+    if (workerBusys.get(id)) {
+        return;
+    }
+    workerBusys.set(id, true);
+
+    // const recognized = await Tesseract.recognize(canvas);
+    const worker = workerPool[workerIndex++];
+    if (workerIndex >= 10) {
+        workerIndex = 0;
+    }
+    let recognized;
+    try {
+        recognized = await worker.recognize(canvas, {
+            rectangle: {
+                left: rect.from[0],
+                top: rect.from[1],
+                width: rect.size[0],
+                height: rect.size[1]
+            }
+        }, {
+            text: true,
+            pdf: false,
+            tsv: false,
+            hocr: false,
+            blocks: false
+        });
+    } catch (e) {
+        console.log(e)
+    }
+    workerBusys.set(id, false);
+    console.log(recognized);
+    console.log(recognized.data.text)
+
+    ipcRenderer.send('recognizedText', id, recognized.data.text)
+    let element = document.querySelector('.text-debug#' + id);
+    if (!element) {
+        element = document.createElement('span');
+        element.className = 'text-debug';
+        element.id = id;
+        document.getElementById('textDebug').appendChild(element);
+    }
+    element.textContent = `[${id}] ${recognized.data.text}`;
+}
+
 
 // ipcRenderer.on('screenshotContent', async (event, sourceId) => {
 //     console.log("source",sourceId)
@@ -92,7 +163,7 @@ function updatePreview() {
 // });
 
 const screenshotStatus = document.getElementById('screenshotStatus');
-ipcRenderer.on('takingScreenshot',e=>{
+ipcRenderer.on('takingScreenshot', e => {
     screenshotStatus.textContent = "Taking screenshot";
 })
 

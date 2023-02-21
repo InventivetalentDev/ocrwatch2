@@ -1,6 +1,11 @@
 import Jimp from "jimp";
-import {BrowserWindow} from "electron";
+import {BrowserWindow, app} from "electron";
 import {Coordinates} from "./coordinates";
+
+import {createWorker}  from 'tesseract.js';
+
+export function init() {
+}
 
 export async function processScreenshot(jmp: Jimp, mainWindow: BrowserWindow) {
     const resized = await jmp.resize(Coordinates.screen.width, Coordinates.screen.height);
@@ -27,7 +32,7 @@ export async function processScreenshot(jmp: Jimp, mainWindow: BrowserWindow) {
             Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
     await processPlayerList('enemies', enemiesListImg, mainWindow);
 
-    await processSelf(contrast.clone(), mainWindow);
+    // await processSelf(contrast.clone(), mainWindow);
 }
 
 async function processPlayerList(type: 'allies' | 'enemies', jmp: Jimp, mainWindow: BrowserWindow) {
@@ -35,5 +40,25 @@ async function processPlayerList(type: 'allies' | 'enemies', jmp: Jimp, mainWind
 }
 
 async function processSelf(jmp: Jimp, mainWindow: BrowserWindow) {
+    const selfName = await jmp.clone()
+        .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
+            Coordinates.self.name.size[0], Coordinates.self.name.size[1]);
+    const selfHero = await jmp.clone()
+        .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
+            Coordinates.self.hero.size[0], Coordinates.self.hero.size[1]);
+
+    ocr(selfName)
+    ocr(selfHero)
     //TODO
+}
+
+async function ocr(jmp: Jimp) {
+    const worker = await createWorker({
+        logger: m => console.log(m),
+    });
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    const buffer = await jmp.getBufferAsync('image/png');
+    const recognized = await worker.recognize(buffer);
+    console.log(recognized);
 }

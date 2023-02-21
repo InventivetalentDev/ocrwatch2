@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8"/>
     <title>Hello World!</title>
-
 </head>
 <body>
 <div>
@@ -12,8 +11,13 @@
         <select id="imageSelect"></select>
         <span id="screenshotStatus">?</span>
     </div>
-    <div>
-        <canvas id="screenshotCanvas"></canvas>
+    <div style="display: flex">
+        <div id="canvasContainer" style="flex: 4">
+            <canvas id="screenshotCanvas"></canvas>
+        </div>
+        <div id="textDebug" style="flex: 1">
+
+        </div>
     </div>
 </div>
 </body>

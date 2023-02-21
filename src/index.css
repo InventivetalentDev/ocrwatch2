@@ -9,3 +9,7 @@ body {
     max-width: 100%;
     max-height: 90vh;
 }
+
+.text-debug {
+    display: block;
+}
