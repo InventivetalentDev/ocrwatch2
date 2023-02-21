@@ -13,7 +13,9 @@ export class Coordinates {
             from: [312, 613],
             to: [1160, 920],
             size: [848, 307]
-        }
+        },
+        rowHeight:62,
+        rowMargin: 8
     }
     static self = {
         name: {

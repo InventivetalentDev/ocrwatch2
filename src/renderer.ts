@@ -2,7 +2,7 @@ import './index.css';
 
 import {desktopCapturer, ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
-import {createWorker, Worker} from "tesseract.js";
+import {createWorker, RecognizeOptions, Worker} from "tesseract.js";
 import Jimp from "jimp/es";
 import {Rect} from "./types";
 
@@ -149,23 +149,39 @@ function updatePreview() {
     ctx.drawImage(img, 0, 0);
 
     //TODO: toggle
-    ctx.strokeStyle = 'blue';
-    ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
-        Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
-    ctx.strokeStyle = 'red';
-    ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
-        Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+    {
+        ctx.strokeStyle = 'blue';
+        ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
+            Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
+        for (let i = 1; i < 5; i++) {
+            ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.stroke()
+        }
+        ctx.strokeStyle = 'red';
+        ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
+            Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+        for (let i = 1; i < 5; i++) {
+            ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.stroke()
+        }
+    }
 
-    ctx.strokeStyle = 'green';
-    ctx.fillStyle = 'white';
-    ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
-    ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1]); // top right
-    ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.1); // top right
-    ctx.lineTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.4); // mid left
-    ctx.fill();
-    ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
-        Coordinates.self.name.size[0], Coordinates.self.name.size[1])
-    ocr(canvas,jmp, Coordinates.self.name as Rect, 'self-name');
+    {
+        ctx.strokeStyle = 'green';
+        ctx.fillStyle = 'white';
+        ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
+        ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1]); // top right
+        ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.1); // top right
+        ctx.lineTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.4); // mid left
+        ctx.fill();
+        ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
+            Coordinates.self.name.size[0], Coordinates.self.name.size[1])
+        const nameplate = jmp.clone().crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1]);
+        ocr(canvas, nameplate, null, 'self-name');
+    }
+
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
     ocr(canvas, jmp, Coordinates.self.hero as Rect, 'self-hero');
@@ -216,14 +232,16 @@ async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string)
     }
     let recognized;
     try {
-        recognized = await worker.recognize(await jmp.getBufferAsync('image/png'), {
-            rectangle: {
+        let options: Partial<RecognizeOptions> = {};
+        if (rect) {
+            options.rectangle = {
                 left: rect.from[0],
                 top: rect.from[1],
                 width: rect.size[0],
                 height: rect.size[1]
             }
-        }, {
+        }
+        recognized = await worker.recognize(await jmp.getBufferAsync('image/png'), options, {
             text: true,
             pdf: false,
             tsv: false,
@@ -287,6 +305,10 @@ async function handleImageContent(imageType: string, jimp: Jimp) {
         option.value = imageType;
         option.text = imageType;
         select.appendChild(option);
+
+        if (imageType === 'contrast') {
+            option.selected = true;
+        }
     }
     element.src = content;
 
