@@ -165,7 +165,7 @@ function updatePreview() {
     ctx.fill();
     ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
         Coordinates.self.name.size[0], Coordinates.self.name.size[1])
-    ocr(canvas, Coordinates.self.name as Rect, 'self-name');
+    ocr(canvas,jmp, Coordinates.self.name as Rect, 'self-name');
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
     ocr(canvas, jmp, Coordinates.self.hero as Rect, 'self-hero');
@@ -216,7 +216,7 @@ async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string)
     }
     let recognized;
     try {
-        recognized = await worker.recognize(canvas, {
+        recognized = await worker.recognize(await jmp.getBufferAsync('image/png'), {
             rectangle: {
                 left: rect.from[0],
                 top: rect.from[1],
