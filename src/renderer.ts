@@ -170,15 +170,19 @@ function updatePreview() {
 
     {
         ctx.strokeStyle = 'green';
-        ctx.fillStyle = 'white';
-        ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
-        ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1]); // top right
-        ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.1); // top right
-        ctx.lineTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.4); // mid left
-        ctx.fill();
+        // ctx.fillStyle = 'white';
+        // ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
+        // ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1]); // top right
+        // ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.1); // top right
+        // ctx.lineTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.4); // mid left
+        // ctx.fill();
         ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
             Coordinates.self.name.size[0], Coordinates.self.name.size[1])
-        const nameplate = jmp.clone().crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1]);
+        const nameplate = jmp.clone()
+            .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
+            .rotate(-4.5)
+            .crop(0, 18, 200, 27)
+        debugImage('nameplate', nameplate);
         ocr(canvas, nameplate, null, 'self-name');
     }
 
@@ -269,6 +273,17 @@ function updateTextDebug(id: string, text: string) {
         document.getElementById('textDebug').appendChild(element);
     }
     element.textContent = `[${id}] ${text}`;
+}
+
+async function debugImage(id: string, jmp: Jimp) {
+    let element: HTMLImageElement = document.querySelector('.img-debug#' + id);
+    if (!element) {
+        element = document.createElement('img');
+        element.className = 'img-debug';
+        element.id = id;
+        document.getElementById('imgDebug').appendChild(element);
+    }
+    element.src = await jmp.getBase64Async('image/png');
 }
 
 // ipcRenderer.on('screenshotContent', async (event, sourceId) => {
