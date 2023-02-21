@@ -1,30 +1,3 @@
-/**
- * This file will automatically be loaded by webpack and run in the "renderer" context.
- * To learn more about the differences between the "main" and the "renderer" context in
- * Electron, visit:
- *
- * https://electronjs.org/docs/latest/tutorial/process-model
- *
- * By default, Node.js integration in this file is disabled. When enabling Node.js integration
- * in a renderer process, please be aware of potential security implications. You can read
- * more about security risks here:
- *
- * https://electronjs.org/docs/tutorial/security
- *
- * To enable Node.js integration in this file, open up `main.js` and enable the `nodeIntegration`
- * flag:
- *
- * ```
- *  // Create the browser window.
- *  mainWindow = new BrowserWindow({
- *    width: 800,
- *    height: 600,
- *    webPreferences: {
- *      nodeIntegration: true
- *    }
- *  });
- * ```
- */
 
 import './index.css';
 
@@ -59,6 +32,69 @@ imageSelect.addEventListener('click', e => {
 imageSelect.addEventListener('change', e => {
     updatePreview();
 });
+
+console.log('👋 This message is being logged by "offscreen.js", included via webpack');
+
+const video = document.querySelector('video');
+const videoCanvas = document.createElement('canvas');
+let stream: MediaStream;
+
+
+async function createVideo(sourceId: string) {
+    if (video) {
+        try{
+            (video.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        }catch (e) { /* empty */ }
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+            mandatory: {
+                cursor: 'never',
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: sourceId,
+                minWidth: 1280,
+                maxWidth: 1280,
+                minHeight: 720,
+                maxHeight: 720
+            }
+        }
+    });
+    video.srcObject = stream
+    video.onloadedmetadata = (e) => {
+        video.play();
+    }
+}
+
+async function takeVideoSnapshot(): Promise<string> {
+    if (!video) {
+        return null;
+    }
+    if (!videoCanvas) {
+        return null;
+    }
+    videoCanvas.width = video.videoWidth;
+    videoCanvas.height = video.videoHeight;
+    const ctx = videoCanvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+
+    return videoCanvas.toDataURL('image/png');
+}
+
+ipcRenderer.on('setSource', async (event, sourceId) => {
+    console.log("source",sourceId)
+
+    createVideo(sourceId);
+});
+
+ipcRenderer.on('takeScreenshot', async (event)=>{
+    console.log("screenshot");
+
+    const img = await takeVideoSnapshot();
+    ipcRenderer.send('screenshotContent', img);
+})
+
 
 const canvas = document.getElementById('screenshotCanvas') as HTMLCanvasElement;
 

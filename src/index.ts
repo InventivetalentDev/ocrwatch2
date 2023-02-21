@@ -1,4 +1,4 @@
-import {app, BrowserWindow, session} from 'electron';
+import {app, BrowserWindow, desktopCapturer, ipcMain, session} from 'electron';
 import * as screenshot from "./screenshot";
 import * as ocr from "./ocr";
 import Jimp from "jimp";
@@ -59,7 +59,17 @@ const createWindow = async (): Promise<void> => {
         })
     })
 
-    await screenshot.init();
+    ipcMain.on('initVideo', (e) => {
+        console.log("initVideo")
+        desktopCapturer.getSources({types: ['screen']}).then(async sources => {
+            mainWindow.webContents.send('setSource', sources[0].id);
+            for (const source of sources) {
+                console.log(source);
+            }
+        })
+    })
+
+    await screenshot.init(mainWindow);
 
     setInterval(async () => {
         if (!mainWindow) return;
@@ -75,6 +85,7 @@ async function loop(mainWindow: BrowserWindow) {
     try {
         mainWindow.webContents.send('takingScreenshot');
         const shot = await screenshot.takeScreenshot();
+        if(!shot) return;
         const jmp = await Jimp.read(Buffer.from(shot.substring('data:image/png;base64,'.length), 'base64'));
 
         await ocr.processScreenshot(jmp, mainWindow);

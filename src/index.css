@@ -10,6 +10,10 @@ body {
     max-height: 90vh;
 }
 
+video {
+    max-width: 15vw;
+}
+
 .text-debug {
     display: block;
 }
