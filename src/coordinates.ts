@@ -17,8 +17,8 @@ export class Coordinates {
     }
     static self = {
         name: {
-            from: [170, 950],
-            size: [250, 50]
+            from: [170, 955],
+            size: [250, 45]
         },
         hero: {
             from: [1190, 350],

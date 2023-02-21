@@ -33,6 +33,7 @@ import {Coordinates} from "./coordinates";
 import {createWorker, Worker} from "tesseract.js";
 import Jimp from "jimp";
 import {Rect} from "./types";
+import Jimp from "jimp";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -78,6 +79,12 @@ function updatePreview() {
         Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
 
     ctx.strokeStyle = 'green';
+    ctx.fillStyle = 'white';
+    ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
+    ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1]); // top right
+    ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.1); // top right
+    ctx.lineTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.4); // mid left
+    ctx.fill();
     ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
         Coordinates.self.name.size[0], Coordinates.self.name.size[1])
     ocr(canvas, Coordinates.self.name as Rect, 'self-name');
@@ -87,6 +94,7 @@ function updatePreview() {
 
     ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
         Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
+    ocr(canvas, Coordinates.match.wrapper as Rect, 'match-info');
     ctx.strokeStyle = 'gold';
     ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
         Coordinates.match.time.size[0], Coordinates.match.time.size[1])
@@ -116,6 +124,7 @@ async function ocr(canvas: HTMLCanvasElement, rect: Rect, id: string) {
         return;
     }
     workerBusys.set(id, true);
+    updateTextDebug(id, "....");
 
     // const recognized = await Tesseract.recognize(canvas);
     const worker = workerPool[workerIndex++];
@@ -144,8 +153,13 @@ async function ocr(canvas: HTMLCanvasElement, rect: Rect, id: string) {
     workerBusys.set(id, false);
     console.log(recognized);
     console.log(recognized.data.text)
+    updateTextDebug(id, recognized.data.text);
 
     ipcRenderer.send('recognizedText', id, recognized.data.text)
+
+}
+
+function updateTextDebug(id: string, text: string) {
     let element = document.querySelector('.text-debug#' + id);
     if (!element) {
         element = document.createElement('span');
@@ -153,9 +167,8 @@ async function ocr(canvas: HTMLCanvasElement, rect: Rect, id: string) {
         element.id = id;
         document.getElementById('textDebug').appendChild(element);
     }
-    element.textContent = `[${id}] ${recognized.data.text}`;
+    element.textContent = `[${id}] ${text}`;
 }
-
 
 // ipcRenderer.on('screenshotContent', async (event, sourceId) => {
 //     console.log("source",sourceId)
