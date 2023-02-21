@@ -1,12 +1,10 @@
-
 import './index.css';
 
 import {desktopCapturer, ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
 import {createWorker, Worker} from "tesseract.js";
-import Jimp from "jimp";
+import Jimp from "jimp/es";
 import {Rect} from "./types";
-import Jimp from "jimp";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -14,14 +12,18 @@ setTimeout(() => {
     ipcRenderer.send('initVideo');
 }, 1000);
 setTimeout(() => {
-    ipcRenderer.send('takeScreenshot');
+    takeScreenshot()
 }, 1200);
+
+setInterval(() => {
+    takeScreenshot();
+}, 5000);
 
 const imageTypes: Set<string> = new Set<string>();
 
 document.getElementById('screenshotBtn').addEventListener('click', e => {
     console.log("screenshotBtn takeScreenshot")
-    ipcRenderer.send('takeScreenshot');
+    takeScreenshot();
 });
 
 const imageSelect = document.getElementById('imageSelect') as HTMLSelectElement;
@@ -42,9 +44,10 @@ let stream: MediaStream;
 
 async function createVideo(sourceId: string) {
     if (video) {
-        try{
+        try {
             (video.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-        }catch (e) { /* empty */ }
+        } catch (e) { /* empty */
+        }
     }
 
     stream = await navigator.mediaDevices.getUserMedia({
@@ -67,6 +70,14 @@ async function createVideo(sourceId: string) {
     }
 }
 
+async function takeScreenshot() {
+    const img = await takeVideoSnapshot();
+
+    const jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
+    // const jmp = await Jimp.read(img);
+    await processScreenshot(jmp)
+}
+
 async function takeVideoSnapshot(): Promise<string> {
     if (!video) {
         return null;
@@ -83,23 +94,54 @@ async function takeVideoSnapshot(): Promise<string> {
 }
 
 ipcRenderer.on('setSource', async (event, sourceId) => {
-    console.log("source",sourceId)
+    console.log("source", sourceId)
 
     createVideo(sourceId);
 });
 
-ipcRenderer.on('takeScreenshot', async (event)=>{
+ipcRenderer.on('takeScreenshot', async (event) => {
     console.log("screenshot");
 
-    const img = await takeVideoSnapshot();
-    ipcRenderer.send('screenshotContent', img);
+    takeScreenshot();
 })
 
+async function processScreenshot(jmp: Jimp) {
+    const resized = await jmp.resize(Coordinates.screen.width, Coordinates.screen.height);
+    handleImageContent('resized', resized);
+    // mainWindow.webContents.send('imageContent', 'resized', await resized.getBase64Async('image/png'));
+
+    const grayscale = await resized.clone().grayscale();
+    handleImageContent('grayscale', grayscale);
+    // mainWindow.webContents.send('imageContent', 'grayscale', await grayscale.getBase64Async('image/png'));
+
+    const inverted = await grayscale.clone().invert();
+    handleImageContent('inverted', inverted);
+    // mainWindow.webContents.send('imageContent', 'inverted', await inverted.getBase64Async('image/png'));
+
+    const contrast = await inverted.clone().contrast(0.1)
+    handleImageContent('contrast', contrast);
+    // mainWindow.webContents.send('imageContent', 'contrast', await contrast.getBase64Async('image/png'));
+
+    ///////////
+
+    // const alliesListImg = await contrast.clone()
+    //     .crop(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
+    //         Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
+    // await processPlayerList('allies', alliesListImg);
+    //
+    // const enemiesListImg = await contrast.clone()
+    //     .crop(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
+    //         Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+    // await processPlayerList('enemies', enemiesListImg);
+
+    // await processSelf(contrast.clone(), mainWindow);
+}
 
 const canvas = document.getElementById('screenshotCanvas') as HTMLCanvasElement;
 
 function updatePreview() {
     const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
+    const jmp = images.get(imageSelect.value);
 
     canvas.width = img.width;
     canvas.height = img.height;
@@ -126,15 +168,20 @@ function updatePreview() {
     ocr(canvas, Coordinates.self.name as Rect, 'self-name');
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
-    ocr(canvas, Coordinates.self.hero as Rect, 'self-hero');
+    ocr(canvas, jmp, Coordinates.self.hero as Rect, 'self-hero');
 
     ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
         Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
-    ocr(canvas, Coordinates.match.wrapper as Rect, 'match-info');
+    ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info');
+
+    ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
+        Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
+    ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance');
+
     ctx.strokeStyle = 'gold';
     ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
         Coordinates.match.time.size[0], Coordinates.match.time.size[1])
-    ocr(canvas, Coordinates.match.time as Rect, 'match-time');
+    ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time');
 
 
 }
@@ -155,7 +202,7 @@ for (let i = 0; i < 10; i++) {
     })();
 }
 
-async function ocr(canvas: HTMLCanvasElement, rect: Rect, id: string) {
+async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string) {
     if (workerBusys.get(id)) {
         return;
     }
@@ -216,8 +263,15 @@ ipcRenderer.on('takingScreenshot', e => {
     screenshotStatus.textContent = "Taking screenshot";
 })
 
-ipcRenderer.on('imageContent', async (event, imageType, content) => {
+const images = new Map<string, Jimp>();
+
+async function handleImageContent(imageType: string, jimp: Jimp) {
+    console.log("handleImageContent", imageType);
+
+    const content = await jimp.getBase64Async('image/png')
     screenshotStatus.textContent = "Got new screenshot";
+
+    images.set(imageType, jimp);
 
     let element = document.getElementById(`img-${imageType}`) as HTMLImageElement;
     if (!element) {
@@ -240,4 +294,5 @@ ipcRenderer.on('imageContent', async (event, imageType, content) => {
     setTimeout(() => {
         updatePreview();
     }, 200);
-})
+}
+

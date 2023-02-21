@@ -1,6 +1,4 @@
 import {app, BrowserWindow, desktopCapturer, ipcMain, session} from 'electron';
-import * as screenshot from "./screenshot";
-import * as ocr from "./ocr";
 import Jimp from "jimp";
 import {Coordinates} from "./coordinates";
 import {
@@ -69,30 +67,29 @@ const createWindow = async (): Promise<void> => {
         })
     })
 
-    await screenshot.init(mainWindow);
 
-    setInterval(async () => {
-        if (!mainWindow) return;
-        if (!mainWindow.webContents) return;
-        await loop(mainWindow)
-    }, 5 * 1000);
-    setTimeout(() => {
-        loop(mainWindow)
-    }, 2000);
+    // setInterval(async () => {
+    //     if (!mainWindow) return;
+    //     if (!mainWindow.webContents) return;
+    //     await loop(mainWindow)
+    // }, 5 * 1000);
+    // setTimeout(() => {
+    //     loop(mainWindow)
+    // }, 2000);
 };
 
-async function loop(mainWindow: BrowserWindow) {
-    try {
-        mainWindow.webContents.send('takingScreenshot');
-        const shot = await screenshot.takeScreenshot();
-        if(!shot) return;
-        const jmp = await Jimp.read(Buffer.from(shot.substring('data:image/png;base64,'.length), 'base64'));
-
-        await ocr.processScreenshot(jmp, mainWindow);
-    } catch (e) {
-        console.error(e);
-    }
-}
+// async function loop(mainWindow: BrowserWindow) {
+//     try {
+//         mainWindow.webContents.send('takingScreenshot');
+//         const shot = await screenshot.takeScreenshot();
+//         if(!shot) return;
+//         const jmp = await Jimp.read(Buffer.from(shot.substring('data:image/png;base64,'.length), 'base64'));
+//
+//         await ocr.processScreenshot(jmp);
+//     } catch (e) {
+//         console.error(e);
+//     }
+// }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

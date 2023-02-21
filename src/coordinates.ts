@@ -35,4 +35,10 @@ export class Coordinates {
             size: [100,35]
         }
     }
+    static performance  = {
+        wrapper: {
+            from: [0,0],
+            size: [500,18]
+        }
+    }
 }
