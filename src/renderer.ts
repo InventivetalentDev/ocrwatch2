@@ -74,9 +74,8 @@ async function createVideo(sourceId: string) {
 async function takeScreenshot() {
     const img = await takeVideoSnapshot();
 
-    // const jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
-    // const jmp = await Jimp.read(img);
-    const jmp = await Jimp.read("https://i.imgur.com/G0G9z2D.png")
+    const jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
+    // const jmp = await Jimp.read("https://i.imgur.com/G0G9z2D.png")
     await processScreenshot(jmp)
 }
 
@@ -160,53 +159,7 @@ function updatePreview() {
     ctx.drawImage(img, 0, 0);
 
     //TODO: toggle
-    {
-        ctx.strokeStyle = 'blue';
-        ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
-            Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
-        for (let i = 0; i < 5; i++) {
-            ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.stroke()
 
-            ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.rowHeight, 'allies-' + i);
-            for (const offset in Coordinates.scoreboard.offsets) {
-                if ('nameEnemy' === offset) continue;
-                const offs = Coordinates.scoreboard.offsets[offset] as Offset;
-                if ('nameAlly' === offset) {
-                    const nameplate = jmp.clone()
-                        .crop(Coordinates.scoreboard.allies.from[0] + offs.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                        offs.w, Coordinates.scoreboard.rowHeight)
-                        .scale(0.9)
-                        .threshold({max: 180, autoGreyscale: false});
-                    debugImage('ally-' + i, nameplate);
-                    ocr(canvas, nameplate, null, 'allies-' + i + '-' + offset);
-                    continue
-                }
-                ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0] + offs.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                    offs.w, Coordinates.scoreboard.rowHeight, 'allies-' + i + '-' + offset);
-            }
-        }
-
-        ctx.strokeStyle = 'red';
-        ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
-            Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
-        for (let i = 0; i < 5; i++) {
-            ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.stroke()
-
-            ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight, 'enemies-' + i);
-            for (const offset in Coordinates.scoreboard.offsets) {
-                if ('nameAlly' === offset) continue;
-                const offs = Coordinates.scoreboard.offsets[offset] as Offset;
-                ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0] + offs.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                    offs.w, Coordinates.scoreboard.rowHeight, 'enemies-' + i + '-' + offset);
-            }
-        }
-    }
 
     {
         ctx.strokeStyle = 'green';
@@ -250,9 +203,57 @@ function updatePreview() {
     ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time');
 
 
+    {
+        ctx.strokeStyle = 'blue';
+        ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
+            Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
+        for (let i = 0; i < 5; i++) {
+            ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.stroke()
+
+            ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.rowHeight, 'allies-' + i);
+            // for (const offset in Coordinates.scoreboard.offsets) {
+            //     if ('nameEnemy' === offset) continue;
+            //     const offs = Coordinates.scoreboard.offsets[offset] as Offset;
+            //     if ('nameAlly' === offset) {
+            //         const nameplate = jmp.clone()
+            //             .crop(Coordinates.scoreboard.allies.from[0] + offs.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
+            //                 offs.w, Coordinates.scoreboard.rowHeight)
+            //             .scale(0.9)
+            //             .threshold({max: 180, autoGreyscale: false});
+            //         debugImage('ally-' + i, nameplate);
+            //         ocr(canvas, nameplate, null, 'allies-' + i + '-' + offset);
+            //         continue
+            //     }
+            //     ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0] + offs.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
+            //         offs.w, Coordinates.scoreboard.rowHeight, 'allies-' + i + '-' + offset);
+            // }
+        }
+
+        ctx.strokeStyle = 'red';
+        ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
+            Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+        for (let i = 0; i < 5; i++) {
+            ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
+            ctx.stroke()
+
+            ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight, 'enemies-' + i);
+            // for (const offset in Coordinates.scoreboard.offsets) {
+            //     if ('nameAlly' === offset) continue;
+            //     const offs = Coordinates.scoreboard.offsets[offset] as Offset;
+            //     ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0] + offs.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
+            //         offs.w, Coordinates.scoreboard.rowHeight, 'enemies-' + i + '-' + offset);
+            // }
+        }
+    }
+
 }
 
-const workers = 8;
+const workers = 16;
 const workerPool: Worker[] = [];
 let workerIndex = 0;
 const workerBusys: Map<string, boolean> = new Map<string, boolean>();
