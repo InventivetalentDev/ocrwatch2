@@ -29,9 +29,13 @@ video {
 .text-debug > .left {
     min-width: 100px;
 }
+.text-debug > .middle {
+    max-width: 50px;
+}
 .text-debug > .right {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 400px;
 }
+

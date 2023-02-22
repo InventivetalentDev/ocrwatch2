@@ -4,7 +4,8 @@ import {desktopCapturer, ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
 import {createWorker, RecognizeOptions, Worker} from "tesseract.js";
 import Jimp from "jimp/es";
-import {Rect} from "./types";
+import {OcrRequest, OcrResult, Rect} from "./types";
+import {JobQueue} from "jobqu";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -161,19 +162,19 @@ function updatePreview() {
             ctx.stroke()
 
             ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1] + Coordinates.scoreboard.rowHeight * i, 'allies-' + i);
+                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.rowHeight , 'allies-' + i);
         }
 
         ctx.strokeStyle = 'red';
         ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
             Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
-        for (let i = 1; i < 5; i++) {
+        for (let i = 0; i < 5; i++) {
             ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.stroke()
 
             ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1] + Coordinates.scoreboard.rowHeight * i, 'enemies-' + i);
+                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight , 'enemies-' + i);
         }
     }
 
@@ -199,7 +200,7 @@ function updatePreview() {
         .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
         .contrast(0.1)
         .scale(0.5)
-        .threshold({ max: 200, autoGreyscale: false });
+        .threshold({max: 200, autoGreyscale: false});
     debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
@@ -225,16 +226,17 @@ const workers = 16;
 const workerPool: Worker[] = [];
 let workerIndex = 0;
 const workerBusys: Map<string, boolean> = new Map<string, boolean>();
+const ocrQueue: JobQueue<OcrRequest, OcrResult> = new JobQueue<OcrRequest, OcrResult>(request => _ocr1(request), 50, 5)
 
 for (let i = 0; i < workers; i++) {
     (async () => {
         const worker = await createWorker({
-            logger: m => console.log(m),
+            logger: m => console.debug(m),
         });
+        workerPool[i] = worker;
         await worker.load();
         await worker.loadLanguage('eng');
         await worker.initialize('eng');
-        workerPool[i] = worker;
     })();
 }
 
@@ -242,12 +244,29 @@ async function ocr0(canvas: HTMLCanvasElement, jmp: Jimp, x: number, y: number, 
     return ocr(canvas, jmp, {from: [x, y], size: [w, h]}, id);
 }
 
-async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string) {
+async function ocr1(request: OcrRequest): Promise<OcrResult> {
+    return ocr(null, request.jmp, request.rect, request.id);
+}
+
+
+async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string): Promise<OcrResult> {
+    updateTextDebug(id, "....", 0, true);
+    return ocrQueue.add({
+        jmp: jmp,
+        rect: rect,
+        id: id
+    })
+}
+
+async function _ocr1(request: OcrRequest): Promise<OcrResult> {
+    return _ocr(null, request.jmp, request.rect, request.id);
+}
+
+async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string): Promise<OcrResult> {
     if (workerBusys.get(id)) {
         return;
     }
     workerBusys.set(id, true);
-    updateTextDebug(id, "....");
 
     // const recognized = await Tesseract.recognize(canvas);
     const worker = workerPool[workerIndex++];
@@ -276,34 +295,51 @@ async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string)
         console.log(e)
     }
     workerBusys.set(id, false);
-    console.log(recognized);
-    console.log(recognized.data.text)
+    // console.log(recognized);
+    // console.log(recognized.data.text)
     let text = recognized.data.text;
     if (recognized.data.confidence < 40) {
         text = "???";
     }
-    updateTextDebug(id, text + " (" + recognized.data.confidence + ")");
+    updateTextDebug(id, text, recognized.data.confidence);
 
     // ipcRenderer.send('recognizedText', id, recognized.data.text)
 
+    return {
+        text: recognized.data.text,
+        confidence: recognized.data.confidence
+    }
 }
 
-function updateTextDebug(id: string, text: string) {
+function updateTextDebug(id: string, text: string, confidence: number, init: boolean = false) {
     let element = document.querySelector('.text-debug#' + id);
     if (!element) {
         element = document.createElement('tr');
         element.className = 'text-debug';
         element.id = id;
         document.getElementById('textDebug').appendChild(element);
-        const left = document.createElement('td');
-        left.className = 'left';
-        element.appendChild(left);
-        const right = document.createElement('td');
-        right.className = 'right';
-        element.appendChild(right);
+        {
+            const left = document.createElement('td');
+            left.className = 'left';
+            element.appendChild(left);
+        }
+        {
+            const middle = document.createElement('td');
+            middle.className = 'middle';
+            element.appendChild(middle);
+        }
+        {
+            const right = document.createElement('td');
+            right.className = 'right';
+            element.appendChild(right);
+        }
+    }
+    if (init) {
+        return;
     }
     element.children.item(0).textContent = id;
-    element.children.item(1).textContent=text;
+    element.children.item(1).textContent = `${confidence}`;
+    element.children.item(2).textContent = text;
     // element.textContent = `[${id}] ${text}`;
 }
 
@@ -331,7 +367,7 @@ ipcRenderer.on('takingScreenshot', e => {
 const images = new Map<string, Jimp>();
 
 async function handleImageContent(imageType: string, jimp: Jimp) {
-    console.log("handleImageContent", imageType);
+    // console.log("handleImageContent", imageType);
 
     const content = await jimp.getBase64Async('image/png')
     screenshotStatus.textContent = "Got new screenshot";

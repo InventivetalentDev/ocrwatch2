@@ -46,6 +46,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "imagescript": "^1.2.16",
     "jimp": "^0.22.4",
+    "jobqu": "^2.0.5",
     "tesseract.js": "^4.0.2"
   }
 }
