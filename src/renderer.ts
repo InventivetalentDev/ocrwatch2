@@ -153,11 +153,15 @@ function updatePreview() {
         ctx.strokeStyle = 'blue';
         ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
             Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
-        for (let i = 1; i < 5; i++) {
+        for (let i = 0; i < 5; i++) {
             ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.stroke()
+
+            ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1] + Coordinates.scoreboard.rowHeight * i, 'allies-' + i);
         }
+
         ctx.strokeStyle = 'red';
         ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
             Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
@@ -165,6 +169,9 @@ function updatePreview() {
             ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.stroke()
+
+            ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1] + Coordinates.scoreboard.rowHeight * i, 'enemies-' + i);
         }
     }
 
@@ -186,9 +193,12 @@ function updatePreview() {
         ocr(canvas, nameplate, null, 'self-name');
     }
 
+    const heroName = jmp.clone()
+        .contrast(0.1);
+    debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
-    ocr(canvas, jmp, Coordinates.self.hero as Rect, 'self-hero');
+    ocr(canvas, heroName, Coordinates.self.hero as Rect, 'self-hero');
 
     ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
         Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
@@ -206,11 +216,12 @@ function updatePreview() {
 
 }
 
+const workers = 16;
 const workerPool: Worker[] = [];
 let workerIndex = 0;
 const workerBusys: Map<string, boolean> = new Map<string, boolean>();
 
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < workers; i++) {
     (async () => {
         const worker = await createWorker({
             logger: m => console.log(m),
@@ -222,6 +233,10 @@ for (let i = 0; i < 10; i++) {
     })();
 }
 
+async function ocr0(canvas: HTMLCanvasElement, jmp: Jimp, x: number, y: number, w: number, h: number, id: string) {
+    return ocr(canvas, jmp, {from: [x, y], size: [w, h]}, id);
+}
+
 async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string) {
     if (workerBusys.get(id)) {
         return;
@@ -231,7 +246,7 @@ async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string)
 
     // const recognized = await Tesseract.recognize(canvas);
     const worker = workerPool[workerIndex++];
-    if (workerIndex >= 10) {
+    if (workerIndex >= workers) {
         workerIndex = 0;
     }
     let recognized;
@@ -258,9 +273,13 @@ async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string)
     workerBusys.set(id, false);
     console.log(recognized);
     console.log(recognized.data.text)
-    updateTextDebug(id, recognized.data.text);
+    let text = recognized.data.text;
+    if (recognized.data.confidence < 40) {
+        text = "???";
+    }
+    updateTextDebug(id, text + " (" + recognized.data.confidence + ")");
 
-    ipcRenderer.send('recognizedText', id, recognized.data.text)
+    // ipcRenderer.send('recognizedText', id, recognized.data.text)
 
 }
 
