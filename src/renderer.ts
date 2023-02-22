@@ -73,8 +73,9 @@ async function createVideo(sourceId: string) {
 async function takeScreenshot() {
     const img = await takeVideoSnapshot();
 
-    const jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
+    // const jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
     // const jmp = await Jimp.read(img);
+    const jmp = await Jimp.read("https://i.imgur.com/G0G9z2D.png")
     await processScreenshot(jmp)
 }
 
@@ -137,6 +138,7 @@ async function processScreenshot(jmp: Jimp) {
     // await processSelf(contrast.clone(), mainWindow);
 }
 
+
 const canvas = document.getElementById('screenshotCanvas') as HTMLCanvasElement;
 
 function updatePreview() {
@@ -188,17 +190,20 @@ function updatePreview() {
         const nameplate = jmp.clone()
             .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
             .rotate(-4.5)
-            .crop(0, 18, 200, 27)
+            .crop(0, 18, 200, 27);
         debugImage('nameplate', nameplate);
         ocr(canvas, nameplate, null, 'self-name');
     }
 
     const heroName = jmp.clone()
-        .contrast(0.1);
+        .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
+        .contrast(0.1)
+        .scale(0.5)
+        .threshold({ max: 200, autoGreyscale: false });
     debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
-    ocr(canvas, heroName, Coordinates.self.hero as Rect, 'self-hero');
+    ocr(canvas, heroName, null, 'self-hero');
 
     ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
         Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
