@@ -291,12 +291,20 @@ async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string)
 function updateTextDebug(id: string, text: string) {
     let element = document.querySelector('.text-debug#' + id);
     if (!element) {
-        element = document.createElement('span');
+        element = document.createElement('tr');
         element.className = 'text-debug';
         element.id = id;
         document.getElementById('textDebug').appendChild(element);
+        const left = document.createElement('td');
+        left.className = 'left';
+        element.appendChild(left);
+        const right = document.createElement('td');
+        right.className = 'right';
+        element.appendChild(right);
     }
-    element.textContent = `[${id}] ${text}`;
+    element.children.item(0).textContent = id;
+    element.children.item(1).textContent=text;
+    // element.textContent = `[${id}] ${text}`;
 }
 
 async function debugImage(id: string, jmp: Jimp) {
