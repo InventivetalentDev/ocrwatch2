@@ -22,6 +22,11 @@ video {
     max-width: 15vw;
 }
 
+#textDebug {
+    overflow-y: scroll;
+    max-height: 80vh;
+}
+
 .text-debug {
     display: block;
 }

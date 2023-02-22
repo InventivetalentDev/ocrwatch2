@@ -5,6 +5,11 @@ export interface Rect {
     size: [number, number];
 }
 
+export interface Offset {
+    x: number;
+    w: number;
+}
+
 export interface OcrRequest {
     id: string;
     rect: Rect|null;

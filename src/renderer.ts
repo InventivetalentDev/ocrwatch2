@@ -4,7 +4,7 @@ import {desktopCapturer, ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
 import {createWorker, RecognizeOptions, Worker} from "tesseract.js";
 import Jimp from "jimp/es";
-import {OcrRequest, OcrResult, Rect} from "./types";
+import {OcrRequest, OcrResult, Offset, Rect} from "./types";
 import {JobQueue} from "jobqu";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
@@ -112,7 +112,12 @@ async function processScreenshot(jmp: Jimp) {
     handleImageContent('resized', resized);
     // mainWindow.webContents.send('imageContent', 'resized', await resized.getBase64Async('image/png'));
 
-    const grayscale = await resized.clone().grayscale();
+    const grayscale = await resized.clone().color([
+        {apply:"red",params:[20]},
+        {apply:"blue",params:[40]},
+        {apply:"green",params:[20]},
+        {apply:"desaturate",params:[100]}
+    ])
     handleImageContent('grayscale', grayscale);
     // mainWindow.webContents.send('imageContent', 'grayscale', await grayscale.getBase64Async('image/png'));
 
@@ -122,6 +127,9 @@ async function processScreenshot(jmp: Jimp) {
 
     const contrast = await inverted.clone().contrast(0.1)
     handleImageContent('contrast', contrast);
+
+    const threshold = await contrast.clone().threshold({max:180,autoGreyscale:false})
+    handleImageContent('threshold', threshold);
     // mainWindow.webContents.send('imageContent', 'contrast', await contrast.getBase64Async('image/png'));
 
     ///////////
@@ -162,7 +170,23 @@ function updatePreview() {
             ctx.stroke()
 
             ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.rowHeight , 'allies-' + i);
+                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.rowHeight, 'allies-' + i);
+            for (const offset in Coordinates.scoreboard.offsets) {
+                if ('nameEnemy' === offset) continue;
+                const offs = Coordinates.scoreboard.offsets[offset] as Offset;
+                if ('nameAlly' === offset) {
+                    const nameplate = jmp.clone()
+                        .crop(Coordinates.scoreboard.allies.from[0] + offs.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                        offs.w, Coordinates.scoreboard.rowHeight)
+                        .scale(0.9)
+                        .threshold({max: 180, autoGreyscale: false});
+                    debugImage('ally-' + i, nameplate);
+                    ocr(canvas, nameplate, null, 'allies-' + i + '-' + offset);
+                    continue
+                }
+                ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0] + offs.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                    offs.w, Coordinates.scoreboard.rowHeight, 'allies-' + i + '-' + offset);
+            }
         }
 
         ctx.strokeStyle = 'red';
@@ -174,7 +198,13 @@ function updatePreview() {
             ctx.stroke()
 
             ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight , 'enemies-' + i);
+                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight, 'enemies-' + i);
+            for (const offset in Coordinates.scoreboard.offsets) {
+                if ('nameAlly' === offset) continue;
+                const offs = Coordinates.scoreboard.offsets[offset] as Offset;
+                ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0] + offs.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                    offs.w, Coordinates.scoreboard.rowHeight, 'enemies-' + i + '-' + offset);
+            }
         }
     }
 
@@ -200,7 +230,7 @@ function updatePreview() {
         .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
         .contrast(0.1)
         .scale(0.5)
-        .threshold({max: 200, autoGreyscale: false});
+        .threshold({max: 180, autoGreyscale: false});
     debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
@@ -222,11 +252,11 @@ function updatePreview() {
 
 }
 
-const workers = 16;
+const workers = 8;
 const workerPool: Worker[] = [];
 let workerIndex = 0;
 const workerBusys: Map<string, boolean> = new Map<string, boolean>();
-const ocrQueue: JobQueue<OcrRequest, OcrResult> = new JobQueue<OcrRequest, OcrResult>(request => _ocr1(request), 50, 5)
+const ocrQueue: JobQueue<OcrRequest, OcrResult> = new JobQueue<OcrRequest, OcrResult>(request => _ocr1(request), 200, 2)
 
 for (let i = 0; i < workers; i++) {
     (async () => {
@@ -298,7 +328,7 @@ async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string
     // console.log(recognized);
     // console.log(recognized.data.text)
     let text = recognized.data.text;
-    if (recognized.data.confidence < 40) {
+    if (recognized.data.confidence < 10) {
         text = "???";
     }
     updateTextDebug(id, text, recognized.data.confidence);

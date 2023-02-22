@@ -15,7 +15,37 @@ export class Coordinates {
             size: [848, 307]
         },
         rowHeight:62,
-        rowMargin: 8
+        rowMargin: 8,
+        offsets: {
+            nameAlly: {
+                x:145,
+                w: 210
+            },
+            nameEnemy: { // (no ult charge)
+                x: 90,
+                w: 210
+            },
+            elims: {
+                x: 384,
+                w:50
+            },
+            assists: {
+                x:435,
+                w:50
+            },
+            deaths: {
+                x: 490,
+                w:50
+            }
+        },
+        nameOffsetAlly: 145,
+        nameOffsetEnemy: 90, // (no ult charge)
+        elimsOffset: 384,
+        elimsWidth: 50,
+        assistsOffset: 435,
+        assistsWidth: 50,
+        deathsOffset: 490,
+        deathsWidth: 50
     }
     static self = {
         name: {
