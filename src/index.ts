@@ -1,6 +1,7 @@
 import {app, BrowserWindow, desktopCapturer, ipcMain, session} from 'electron';
 import Jimp from "jimp";
 import {Coordinates} from "./coordinates";
+import { uIOhook, UiohookKey } from 'uiohook-napi'
 import {
     tapAfterEnvironmentToPatchWatching
 } from "fork-ts-checker-webpack-plugin/lib/hooks/tap-after-environment-to-patch-watching";
@@ -67,6 +68,24 @@ const createWindow = async (): Promise<void> => {
         })
     })
 
+    let tabDown = false;
+
+    // not a keylogger, promise!
+    console.log(uIOhook)
+    uIOhook.on('keydown',e=>{
+        if (e.keycode === UiohookKey.Tab && !tabDown) {
+            tabDown = true;
+            mainWindow.webContents.send('tabKey', true);
+        }
+    })
+    uIOhook.on('keyup',e=>{
+        // not a keylogger, promise!
+        if (e.keycode === UiohookKey.Tab && tabDown) {
+            tabDown = false;
+            mainWindow.webContents.send('tabKey', false);
+        }
+    })
+    uIOhook.start();
 
     // setInterval(async () => {
     //     if (!mainWindow) return;

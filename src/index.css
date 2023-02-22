@@ -36,6 +36,7 @@ video {
 }
 .text-debug > .middle {
     max-width: 50px;
+    min-width: 30px;
 }
 .text-debug > .right {
     overflow: hidden;

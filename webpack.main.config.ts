@@ -10,6 +10,9 @@ export const mainConfig: Configuration = {
   entry: './src/index.ts',
   // Put your normal webpack config below here
   target: 'electron-main',
+  externals: {
+    "uiohook-napi":"uiohook-napi"
+  },
   module: {
     rules,
   },

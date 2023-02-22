@@ -12,13 +12,13 @@ console.log('👋 This message is being logged by "renderer.js", included via we
 setTimeout(() => {
     ipcRenderer.send('initVideo');
 }, 1000);
-setTimeout(() => {
-    takeScreenshot()
-}, 1200);
+// setTimeout(() => {
+//     takeScreenshot()
+// }, 1200);
 
-setInterval(() => {
-    takeScreenshot();
-}, 5000);
+// setInterval(() => {
+//     takeScreenshot();
+// }, 5000);
 
 const imageTypes: Set<string> = new Set<string>();
 
@@ -72,7 +72,11 @@ async function createVideo(sourceId: string) {
 }
 
 async function takeScreenshot() {
+    screenshotStatus.textContent = "Taking screenshot...";
+
     const img = await takeVideoSnapshot();
+
+    screenshotStatus.textContent = "Processing...";
 
     const jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
     // const jmp = await Jimp.read("https://i.imgur.com/G0G9z2D.png")
@@ -112,10 +116,10 @@ async function processScreenshot(jmp: Jimp) {
     // mainWindow.webContents.send('imageContent', 'resized', await resized.getBase64Async('image/png'));
 
     const grayscale = await resized.clone().color([
-        {apply:"red",params:[20]},
-        {apply:"blue",params:[40]},
-        {apply:"green",params:[20]},
-        {apply:"desaturate",params:[100]}
+        {apply: "red", params: [20]},
+        {apply: "blue", params: [40]},
+        {apply: "green", params: [20]},
+        {apply: "desaturate", params: [100]}
     ])
     handleImageContent('grayscale', grayscale);
     // mainWindow.webContents.send('imageContent', 'grayscale', await grayscale.getBase64Async('image/png'));
@@ -127,7 +131,7 @@ async function processScreenshot(jmp: Jimp) {
     const contrast = await inverted.clone().contrast(0.1)
     handleImageContent('contrast', contrast);
 
-    const threshold = await contrast.clone().threshold({max:180,autoGreyscale:false})
+    const threshold = await contrast.clone().threshold({max: 180, autoGreyscale: false})
     handleImageContent('threshold', threshold);
     // mainWindow.webContents.send('imageContent', 'contrast', await contrast.getBase64Async('image/png'));
 
@@ -158,6 +162,8 @@ function updatePreview() {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
 
+    screenshotStatus.textContent = "Running OCR...";
+
     //TODO: toggle
 
 
@@ -173,8 +179,9 @@ function updatePreview() {
             Coordinates.self.name.size[0], Coordinates.self.name.size[1])
         const nameplate = jmp.clone()
             .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
-            .rotate(-4.5)
-            .crop(0, 18, 200, 27);
+            .rotate(-4.6)
+            .crop(0, 19, 200, 25)
+            .threshold({max: 200    , autoGreyscale: false});
         debugImage('nameplate', nameplate);
         ocr(canvas, nameplate, null, 'self-name');
     }
@@ -183,7 +190,7 @@ function updatePreview() {
         .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
         .contrast(0.1)
         .scale(0.5)
-        .threshold({max: 180, autoGreyscale: false});
+        .threshold({max: 150, autoGreyscale: false});
     debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
@@ -390,6 +397,18 @@ async function debugImage(id: string, jmp: Jimp) {
 //     document.getElementById('screenshotPreview').src = sourceId
 // });
 
+let tabDown = false;
+ipcRenderer.on('tabKey', (event, action) => {
+    console.log(`[tab] ${action}`)
+    tabDown = action;
+
+    setTimeout(() => {
+        if (tabDown) {
+            takeScreenshot();
+        }
+    }, 500);
+})
+
 const screenshotStatus = document.getElementById('screenshotStatus');
 ipcRenderer.on('takingScreenshot', e => {
     screenshotStatus.textContent = "Taking screenshot";
@@ -427,8 +446,10 @@ async function handleImageContent(imageType: string, jimp: Jimp) {
     element.src = content;
 
     // wait for new image content to load before re-drawing
-    setTimeout(() => {
-        updatePreview();
-    }, 200);
+    if (imageType === 'contrast') {
+        setTimeout(() => {
+            updatePreview();
+        }, 200);
+    }
 }
 

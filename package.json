@@ -17,8 +17,8 @@
     "email": "mail@inventivetalent.org"
   },
   "license": "MIT",
-  "iohook": {
-    "targets": {}
+  "engines": {
+    "node": "19"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.5",
@@ -47,6 +47,7 @@
     "imagescript": "^1.2.16",
     "jimp": "^0.22.4",
     "jobqu": "^2.0.5",
-    "tesseract.js": "^4.0.2"
+    "tesseract.js": "^4.0.2",
+    "uiohook-napi": "^1.5.0"
   }
 }
