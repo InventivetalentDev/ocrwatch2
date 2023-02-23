@@ -9,6 +9,8 @@ import {JobQueue} from "jobqu";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
+const MIN_CONFIDENCE= 50
+
 setTimeout(() => {
     ipcRenderer.send('initVideo');
 }, 1000);
@@ -42,6 +44,21 @@ const video = document.querySelector('video');
 const videoCanvas = document.createElement('canvas');
 let stream: MediaStream;
 
+let data = {
+    self: {
+        name: '',
+        hero: ''
+    },
+    match: {
+        mode: '',
+        map: '',
+        competitive: false,
+        time: {
+            text: '',
+            duration: 0
+        }
+    }
+};
 
 async function createVideo(sourceId: string) {
     if (video) {
@@ -152,6 +169,15 @@ async function processScreenshot(jmp: Jimp) {
 
 
 const canvas = document.getElementById('screenshotCanvas') as HTMLCanvasElement;
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    document.getElementById('positionInfo').textContent = `${Math.round(x)} ${Math.round(y)}`
+})
 
 function updatePreview() {
     const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
@@ -179,11 +205,16 @@ function updatePreview() {
             Coordinates.self.name.size[0], Coordinates.self.name.size[1])
         const nameplate = jmp.clone()
             .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
-            .rotate(-4.6)
+            .rotate(-4.5)
             .crop(0, 19, 200, 25)
-            .threshold({max: 200    , autoGreyscale: false});
+            .threshold({max: 200, autoGreyscale: false});
         debugImage('nameplate', nameplate);
-        ocr(canvas, nameplate, null, 'self-name');
+        ocr(canvas, nameplate, null, 'self-name')
+            .then(res => {
+                if(res.confidence>MIN_CONFIDENCE) {
+                    data.self.name = res.text
+                }
+            })
     }
 
     const heroName = jmp.clone()
@@ -194,11 +225,16 @@ function updatePreview() {
     debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
-    ocr(canvas, heroName, null, 'self-hero');
+    ocr(canvas, heroName, null, 'self-hero')
+        .then(res => {
+            if(res.confidence>MIN_CONFIDENCE) {
+                data.self.hero = res.text
+            }
+        })
 
     ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
         Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
-    ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info');
+    ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
 
     ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
         Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
@@ -207,7 +243,12 @@ function updatePreview() {
     ctx.strokeStyle = 'gold';
     ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
         Coordinates.match.time.size[0], Coordinates.match.time.size[1])
-    ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time');
+    ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time')
+        .then(res => {
+            if(res.confidence>MIN_CONFIDENCE) {
+                data.match.time.text = res.text
+            }
+        })
 
 
     {
