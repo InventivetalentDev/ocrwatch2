@@ -9,7 +9,7 @@ import {JobQueue} from "jobqu";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
-const MIN_CONFIDENCE= 50
+const MIN_CONFIDENCE = 50
 
 setTimeout(() => {
     ipcRenderer.send('initVideo');
@@ -50,6 +50,7 @@ let data = {
         hero: ''
     },
     match: {
+        info: '',
         mode: '',
         map: '',
         competitive: false,
@@ -57,7 +58,9 @@ let data = {
             text: '',
             duration: 0
         }
-    }
+    },
+    allies: [{}, {}, {}, {}, {}],
+    enemies: [{}, {}, {}, {}, {}]
 };
 
 async function createVideo(sourceId: string) {
@@ -95,8 +98,13 @@ async function takeScreenshot() {
 
     screenshotStatus.textContent = "Processing...";
 
-    const jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
-    // const jmp = await Jimp.read("https://i.imgur.com/G0G9z2D.png")
+    let jmp;
+    if (document.getElementById('testImg').checked) {
+        jmp = await Jimp.read("https://i.imgur.com/SQeVL8V.png")
+    } else {
+        jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
+    }
+
     await processScreenshot(jmp)
 }
 
@@ -132,12 +140,8 @@ async function processScreenshot(jmp: Jimp) {
     handleImageContent('resized', resized);
     // mainWindow.webContents.send('imageContent', 'resized', await resized.getBase64Async('image/png'));
 
-    const grayscale = await resized.clone().color([
-        {apply: "red", params: [20]},
-        {apply: "blue", params: [40]},
-        {apply: "green", params: [20]},
-        {apply: "desaturate", params: [100]}
-    ])
+    const grayscale = await resized.clone()
+        .grayscale();
     handleImageContent('grayscale', grayscale);
     // mainWindow.webContents.send('imageContent', 'grayscale', await grayscale.getBase64Async('image/png'));
 
@@ -151,6 +155,10 @@ async function processScreenshot(jmp: Jimp) {
     const threshold = await contrast.clone().threshold({max: 180, autoGreyscale: false})
     handleImageContent('threshold', threshold);
     // mainWindow.webContents.send('imageContent', 'contrast', await contrast.getBase64Async('image/png'));
+
+    const maskJmp = await Jimp.read("https://i.imgur.com/uzNlsBC.png");
+    const masked = await contrast.clone().blit(maskJmp, 0, 0);
+    handleImageContent('masked', masked);
 
     ///////////
 
@@ -179,9 +187,15 @@ canvas.addEventListener('mousemove', e => {
     document.getElementById('positionInfo').textContent = `${Math.round(x)} ${Math.round(y)}`
 })
 
+function cleanupText(txt: string) {
+    return txt.replace('\n', '').trim();
+}
+
 function updatePreview() {
     const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
     const jmp = images.get(imageSelect.value);
+    const resized = images.get('resized');
+    const contrast = images.get('contrast');
 
     canvas.width = img.width;
     canvas.height = img.height;
@@ -192,6 +206,7 @@ function updatePreview() {
 
     //TODO: toggle
 
+    const ocrPromises: Promise[] = [];
 
     {
         ctx.strokeStyle = 'green';
@@ -209,12 +224,12 @@ function updatePreview() {
             .crop(0, 19, 200, 25)
             .threshold({max: 200, autoGreyscale: false});
         debugImage('nameplate', nameplate);
-        ocr(canvas, nameplate, null, 'self-name')
+        ocrPromises.push(ocr(canvas, nameplate, null, 'self-name')
             .then(res => {
-                if(res.confidence>MIN_CONFIDENCE) {
-                    data.self.name = res.text
+                if (res.confidence > MIN_CONFIDENCE) {
+                    data.self.name = cleanupText(res.text)
                 }
-            })
+            }))
     }
 
     const heroName = jmp.clone()
@@ -225,30 +240,40 @@ function updatePreview() {
     debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
-    ocr(canvas, heroName, null, 'self-hero')
+    ocrPromises.push(ocr(canvas, heroName, null, 'self-hero')
         .then(res => {
-            if(res.confidence>MIN_CONFIDENCE) {
-                data.self.hero = res.text
+            if (res.confidence > MIN_CONFIDENCE) {
+                data.self.hero = cleanupText(res.text)
             }
-        })
+        }))
 
     ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
         Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
-    ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
+    ocrPromises.push(ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
+        .then(res => {
+            if (res.confidence > MIN_CONFIDENCE) {
+                data.match.info = cleanupText(res.text);
+                const mapSplit = data.match.info.split("|");
+                const modeSplit = mapSplit[0].split("-");
+                data.match.mode = cleanupText(modeSplit[0]);
+                data.match.map = cleanupText(mapSplit[1]);
+                data.match.competitive = mapSplit[0].toUpperCase().includes("COMPETITIVE");
+            }
+        }))
 
     ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
         Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
-    ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance');
+    ocrPromises.push(ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance'))
 
     ctx.strokeStyle = 'gold';
     ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
         Coordinates.match.time.size[0], Coordinates.match.time.size[1])
-    ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time')
+    ocrPromises.push(ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time')
         .then(res => {
-            if(res.confidence>MIN_CONFIDENCE) {
-                data.match.time.text = res.text
+            if (res.confidence > MIN_CONFIDENCE) {
+                data.match.time.text = cleanupText(res.text)
             }
-        })
+        }))
 
 
     {
@@ -260,8 +285,19 @@ function updatePreview() {
             ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.stroke()
 
-            ocr0(canvas, jmp, Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.rowHeight, 'allies-' + i);
+            const stats = resized.clone().crop(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.nameAlly.x + Coordinates.scoreboard.offsets.nameAlly.w, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.allies.size[0] - Coordinates.scoreboard.offsets.nameAlly.x - Coordinates.scoreboard.offsets.nameAlly.w, Coordinates.scoreboard.rowHeight)
+                .color([
+                    {apply: "xor", params: ["#127A93"]}
+                ])
+                .grayscale()
+                .invert()
+            debugImage('allies-' + i, stats);
+            ocrPromises.push(ocr(canvas, stats, null, 'allies-' + i).then(res => {
+                if (res.confidence > MIN_CONFIDENCE) {
+                    data.allies[i].text = cleanupText(res.text)
+                }
+            }))
             // for (const offset in Coordinates.scoreboard.offsets) {
             //     if ('nameEnemy' === offset) continue;
             //     const offs = Coordinates.scoreboard.offsets[offset] as Offset;
@@ -288,8 +324,22 @@ function updatePreview() {
             ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.stroke()
 
-            ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight, 'enemies-' + i);
+            const stats = resized.clone().crop(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.nameEnemy.x + Coordinates.scoreboard.offsets.nameEnemy.w, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.enemies.size[0] - Coordinates.scoreboard.offsets.nameEnemy.x - Coordinates.scoreboard.offsets.nameEnemy.w, Coordinates.scoreboard.rowHeight)
+                .color([
+                    {apply: "xor", params: ["#8D1E30"]}
+                ])
+                .grayscale()
+                .invert()
+            debugImage('enemies-' + i, stats);
+            ocrPromises.push(ocr(canvas, stats, null, 'enemies-' + i)
+                .then(res => {
+                if (res.confidence > MIN_CONFIDENCE) {
+                    data.enemies[i].text = cleanupText(res.text)
+                }
+            }))
+            // ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
+            //     Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight, 'enemies-' + i);
             // for (const offset in Coordinates.scoreboard.offsets) {
             //     if ('nameAlly' === offset) continue;
             //     const offs = Coordinates.scoreboard.offsets[offset] as Offset;
@@ -298,6 +348,15 @@ function updatePreview() {
             // }
         }
     }
+
+    setTimeout(() => {
+        document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
+    }, 1000);
+    Promise.all(ocrPromises).then(() => {
+        document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
+
+        screenshotStatus.textContent = "Ready"
+    })
 
 }
 
@@ -313,7 +372,6 @@ for (let i = 0; i < workers; i++) {
             logger: m => console.debug(m),
         });
         workerPool[i] = worker;
-        await worker.load();
         await worker.loadLanguage('eng');
         await worker.initialize('eng');
     })();
@@ -480,14 +538,14 @@ async function handleImageContent(imageType: string, jimp: Jimp) {
         option.text = imageType;
         select.appendChild(option);
 
-        if (imageType === 'contrast') {
+        if (imageType === 'masked') {
             option.selected = true;
         }
     }
     element.src = content;
 
     // wait for new image content to load before re-drawing
-    if (imageType === 'contrast') {
+    if (imageType === 'masked') {
         setTimeout(() => {
             updatePreview();
         }, 200);
