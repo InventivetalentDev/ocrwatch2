@@ -4,8 +4,9 @@ import {desktopCapturer, ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
 import {createWorker, RecognizeOptions, Worker} from "tesseract.js";
 import Jimp from "jimp/es";
-import {OcrRequest, OcrResult, Offset, Rect} from "./types";
+import {GameData, OcrRequest, OcrResult, Offset, PlayerData, Rect} from "./types";
 import {JobQueue} from "jobqu";
+import {JsonOutput} from "./output/output";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -44,7 +45,12 @@ const video = document.querySelector('video');
 const videoCanvas = document.createElement('canvas');
 let stream: MediaStream;
 
-let data = {
+const DEFAULT_DATA: GameData = {
+    times: {
+        start: new Date(),
+        end: new Date()
+    },
+    status: 'in_progress',
     self: {
         name: '',
         hero: ''
@@ -59,13 +65,13 @@ let data = {
             duration: 0
         }
     },
-    performance:{},
+    performance: {},
     allies: [],
     enemies: []
 };
 
 for (let i = 0; i < 5; i++) {
-    let placeholder = {
+    let placeholder: PlayerData = {
         primary: '',
         secondary: '',
         eliminations: 0,
@@ -75,9 +81,26 @@ for (let i = 0; i < 5; i++) {
         healing: 0,
         mitigated: 0
     };
-    data.allies.push({...{},...placeholder});
-    data.enemies.push({...{},...placeholder});
+    DEFAULT_DATA.allies.push({...{}, ...placeholder});
+    DEFAULT_DATA.enemies.push({...{}, ...placeholder});
 }
+
+let data = {...{}, ...DEFAULT_DATA};
+
+
+try {
+    JsonOutput.readJson("currentgame.json")
+} catch (e) {
+    console.log(e)
+}
+
+function resetData() {
+    data = {...{}, ...DEFAULT_DATA};
+}
+
+const outputs = [
+    new JsonOutput()
+]
 
 async function createVideo(sourceId: string) {
     if (video) {
@@ -208,6 +231,7 @@ function cleanupText(txt: string) {
 }
 
 function parseNumber(txt: string): number {
+    if (!txt) return 0;
     txt = txt.replace(',', '');
     txt = txt.replace('o', '0');
     txt = txt.replace('O', '0');
@@ -287,7 +311,7 @@ function updatePreview() {
     ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
         Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
     ocrPromises.push(ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance')
-        .then(res=>{
+        .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 data.performance.text = cleanupText(res.text);
             }
@@ -321,17 +345,17 @@ function updatePreview() {
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
-                .threshold({max:200})
+                .threshold({max: 200})
             const stats2 = resized.clone().crop(Coordinates.scoreboard.allies.stats2.from[0], Coordinates.scoreboard.allies.stats2.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.stats2.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
-                .threshold({max:200})
-            debugImage('allies-' + i+'-primary', stats1);
-            debugImage('allies-' + i+'-secondary', stats2);
-            ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i+'-primary').then(res => {
+                .threshold({max: 200})
+            debugImage('allies-' + i + '-primary', stats1);
+            debugImage('allies-' + i + '-secondary', stats2);
+            ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i + '-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.allies[i].primary = cleanupText(res.text)
                     const split = data.allies[i].primary.split(' ');
@@ -340,7 +364,7 @@ function updatePreview() {
                     data.allies[i].deaths = parseNumber(split[2]);
                 }
             }))
-            ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i+'-secondary').then(res => {
+            ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i + '-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.allies[i].secondary = cleanupText(res.text)
                     const split = data.allies[i].secondary.split(' ');
@@ -383,17 +407,17 @@ function updatePreview() {
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
-                .threshold({max:200})
+                .threshold({max: 200})
             const stats2 = resized.clone().crop(Coordinates.scoreboard.enemies.stats2.from[0], Coordinates.scoreboard.enemies.stats2.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.stats2.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
-                .threshold({max:200})
-            debugImage('enemies-' + i+'-primary', stats1);
-            debugImage('enemies-' + i+'-secondary', stats2);
-            ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i+'-primary').then(res => {
+                .threshold({max: 200})
+            debugImage('enemies-' + i + '-primary', stats1);
+            debugImage('enemies-' + i + '-secondary', stats2);
+            ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i + '-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.enemies[i].primary = cleanupText(res.text)
                     const split = data.enemies[i].primary.split(' ');
@@ -402,7 +426,7 @@ function updatePreview() {
                     data.enemies[i].deaths = parseNumber(split[2]);
                 }
             }))
-            ocrPromises.push(ocr(canvas, stats2, null, 'enemies-' + i+'-secondary').then(res => {
+            ocrPromises.push(ocr(canvas, stats2, null, 'enemies-' + i + '-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.enemies[i].secondary = cleanupText(res.text)
                     const split = data.enemies[i].secondary.split(' ');
@@ -431,9 +455,34 @@ function updatePreview() {
         document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
 
         screenshotStatus.textContent = "Ready"
+
+        JsonOutput.writeJson("currentgame.json", data);
     })
 
 }
+
+function writeOutputAndReset() {
+    for (const out of outputs) {
+        try {
+            out.write(data);
+        } catch (e) {
+            console.log(e);
+        }
+    }
+}
+
+document.getElementById('winButton').addEventListener('click', () => {
+    data.status = 'win';
+    writeOutputAndReset()
+})
+document.getElementById('drawButton').addEventListener('click', () => {
+    data.status = 'draw';
+    writeOutputAndReset()
+})
+document.getElementById('lossButton').addEventListener('click', () => {
+    data.status = 'loss';
+    writeOutputAndReset()
+})
 
 const workers = 16;
 const workerPool: Worker[] = [];
