@@ -233,6 +233,7 @@ function cleanupText(txt: string) {
 function parseNumber(txt: string): number {
     if (!txt) return 0;
     txt = txt.replace(',', '');
+    txt = txt.replace('.', '');
     txt = txt.replace('o', '0');
     txt = txt.replace('O', '0');
     return parseInt(txt.trim());
