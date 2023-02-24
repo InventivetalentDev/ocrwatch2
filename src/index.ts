@@ -30,6 +30,7 @@ const createWindow = async (): Promise<void> => {
             preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
             nodeIntegration: true,
             contextIsolation: false,
+            nodeIntegrationInWorker: true,
         },
     });
     mainWindow.webContents.setFrameRate(1);
