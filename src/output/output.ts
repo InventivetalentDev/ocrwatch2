@@ -25,13 +25,17 @@ export class JsonOutput extends Output {
     }
 
     static writeJson(file: string, data: GameData) {
-        mkdirp(file);
-        fs.writeFile(file, JSON.stringify(data, null, 2), {
-            encoding: 'utf-8',
-            flag: 'w'
-        }, err => {
-            console.log(err)
-        });
+        try {
+            if (!fs.existsSync(file)) {
+                mkdirp(file);
+            }
+            fs.writeFileSync(file, JSON.stringify(data, null, 2), {
+                encoding: 'utf-8',
+                flag: 'w'
+            });
+        } catch (e) {
+            console.log(e)
+        }
     }
 
 }

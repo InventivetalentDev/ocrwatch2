@@ -10,7 +10,7 @@ import {JsonOutput} from "./output/output";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
-const MIN_CONFIDENCE = 60
+const MIN_CONFIDENCE = 70
 
 setTimeout(() => {
     ipcRenderer.send('initVideo');
@@ -450,10 +450,10 @@ function updatePreview() {
     }
 
     setTimeout(() => {
-        document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
+        updateDataDebug();
     }, 1000);
     Promise.all(ocrPromises).then(() => {
-        document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
+        updateDataDebug();
 
         screenshotStatus.textContent = "Ready"
 
@@ -470,19 +470,27 @@ function writeOutputAndReset() {
             console.log(e);
         }
     }
+    data = {...{},...DEFAULT_DATA}
+}
+
+function updateDataDebug() {
+    document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
 }
 
 document.getElementById('winButton').addEventListener('click', () => {
     data.status = 'win';
-    writeOutputAndReset()
+    writeOutputAndReset();
+    updateDataDebug();
 })
 document.getElementById('drawButton').addEventListener('click', () => {
     data.status = 'draw';
     writeOutputAndReset()
+    updateDataDebug();
 })
 document.getElementById('lossButton').addEventListener('click', () => {
     data.status = 'loss';
     writeOutputAndReset()
+    updateDataDebug();
 })
 
 const workers = 16;
