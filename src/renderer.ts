@@ -89,7 +89,8 @@ let data = {...{}, ...DEFAULT_DATA};
 
 
 try {
-    JsonOutput.readJson("currentgame.json")
+    data = JsonOutput.readJson("currentgame.json")
+    updateDataDebug()
 } catch (e) {
     console.log(e)
 }
@@ -470,7 +471,15 @@ function writeOutputAndReset() {
             console.log(e);
         }
     }
-    data = {...{},...DEFAULT_DATA}
+    setTimeout(() => {
+        updateDataDebug();
+    }, 200);
+    setTimeout(() => {
+        data = {...{}, ...DEFAULT_DATA}
+    }, 1000)
+    setTimeout(() => {
+        updateDataDebug();
+    }, 1500);
 }
 
 function updateDataDebug() {
@@ -480,17 +489,14 @@ function updateDataDebug() {
 document.getElementById('winButton').addEventListener('click', () => {
     data.status = 'win';
     writeOutputAndReset();
-    updateDataDebug();
 })
 document.getElementById('drawButton').addEventListener('click', () => {
     data.status = 'draw';
     writeOutputAndReset()
-    updateDataDebug();
 })
 document.getElementById('lossButton').addEventListener('click', () => {
     data.status = 'loss';
     writeOutputAndReset()
-    updateDataDebug();
 })
 
 const workers = 16;
