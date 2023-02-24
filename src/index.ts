@@ -46,7 +46,7 @@ const createWindow = async (): Promise<void> => {
     // Open the DevTools.
     mainWindow.webContents.openDevTools();
 
-    mainWindow.on('closed', e => {
+    mainWindow.on('closed', () => {
         app.quit();
     })
 
@@ -59,7 +59,7 @@ const createWindow = async (): Promise<void> => {
         })
     })
 
-    ipcMain.on('initVideo', (e) => {
+    ipcMain.on('initVideo', () => {
         console.log("initVideo")
         desktopCapturer.getSources({types: ['screen']}).then(async sources => {
             mainWindow.webContents.send('setSource', sources[0].id);

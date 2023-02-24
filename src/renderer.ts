@@ -3,6 +3,8 @@ import './index.css';
 import {desktopCapturer, ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
 import {createWorker, RecognizeOptions, Worker} from "tesseract.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import Jimp from "jimp/es";
 import {GameData, OcrRequest, OcrResult, Offset, PlayerData, Rect} from "./types";
 import {JobQueue} from "jobqu";
@@ -71,7 +73,7 @@ const DEFAULT_DATA: GameData = {
 };
 
 for (let i = 0; i < 5; i++) {
-    let placeholder: PlayerData = {
+    const placeholder: PlayerData = {
         primary: '',
         secondary: '',
         eliminations: 0,
@@ -114,6 +116,8 @@ async function createVideo(sourceId: string) {
     stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             mandatory: {
                 cursor: 'never',
                 chromeMediaSource: 'desktop',
@@ -126,7 +130,7 @@ async function createVideo(sourceId: string) {
         }
     });
     video.srcObject = stream
-    video.onloadedmetadata = (e) => {
+    video.onloadedmetadata = () => {
         video.play();
     }
 }
@@ -139,7 +143,7 @@ async function takeScreenshot() {
     screenshotStatus.textContent = "Processing...";
 
     let jmp;
-    if (document.getElementById('testImg').checked) {
+    if ((document.getElementById('testImg') as HTMLInputElement).checked) {
         jmp = await Jimp.read("https://i.imgur.com/SQeVL8V.png")
     } else {
         jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
@@ -255,7 +259,7 @@ function updatePreview() {
 
     //TODO: toggle
 
-    const ocrPromises: Promise[] = [];
+    const ocrPromises: Promise<void|OcrResult>[] = [];
 
     {
         ctx.strokeStyle = 'green';
@@ -551,7 +555,7 @@ async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string
     }
     let recognized;
     try {
-        let options: Partial<RecognizeOptions> = {};
+        const options: Partial<RecognizeOptions> = {};
         if (rect) {
             options.rectangle = {
                 left: rect.from[0],
@@ -587,7 +591,7 @@ async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string
     }
 }
 
-function updateTextDebug(id: string, text: string, confidence: number, init: boolean = false) {
+function updateTextDebug(id: string, text: string, confidence: number, init = false) {
     let element = document.querySelector('.text-debug#' + id);
     if (!element) {
         element = document.createElement('tr');
