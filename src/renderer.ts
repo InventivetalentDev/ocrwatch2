@@ -59,6 +59,7 @@ let data = {
             duration: 0
         }
     },
+    performance:{},
     allies: [],
     enemies: []
 };
@@ -206,6 +207,13 @@ function cleanupText(txt: string) {
     return txt.replace('\n', '').trim();
 }
 
+function parseNumber(txt: string): number {
+    txt = txt.replace(',', '');
+    txt = txt.replace('o', '0');
+    txt = txt.replace('O', '0');
+    return parseInt(txt.trim());
+}
+
 function updatePreview() {
     const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
     const jmp = images.get(imageSelect.value);
@@ -278,7 +286,12 @@ function updatePreview() {
 
     ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
         Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
-    ocrPromises.push(ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance'))
+    ocrPromises.push(ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance')
+        .then(res=>{
+            if (res.confidence > MIN_CONFIDENCE) {
+                data.performance.text = cleanupText(res.text);
+            }
+        }))
 
     ctx.strokeStyle = 'gold';
     ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
@@ -322,18 +335,18 @@ function updatePreview() {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.allies[i].primary = cleanupText(res.text)
                     const split = data.allies[i].primary.split(' ');
-                    data.allies[i].eliminations = parseInt(split[0]);
-                    data.allies[i].assists = parseInt(split[1]);
-                    data.allies[i].deaths = parseInt(split[2]);
+                    data.allies[i].eliminations = parseNumber(split[0]);
+                    data.allies[i].assists = parseNumber(split[1]);
+                    data.allies[i].deaths = parseNumber(split[2]);
                 }
             }))
             ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i+'-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.allies[i].secondary = cleanupText(res.text)
                     const split = data.allies[i].secondary.split(' ');
-                    data.allies[i].damage = parseFloat(split[0]);
-                    data.allies[i].healing = parseFloat(split[1]);
-                    data.allies[i].mitigated = parseFloat(split[2]);
+                    data.allies[i].damage = parseNumber(split[0]);
+                    data.allies[i].healing = parseNumber(split[1]);
+                    data.allies[i].mitigated = parseNumber(split[2]);
                 }
             }))
 
@@ -384,18 +397,18 @@ function updatePreview() {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.enemies[i].primary = cleanupText(res.text)
                     const split = data.enemies[i].primary.split(' ');
-                    data.enemies[i].eliminations = parseInt(split[0]);
-                    data.enemies[i].assists = parseInt(split[1]);
-                    data.enemies[i].deaths = parseInt(split[2]);
+                    data.enemies[i].eliminations = parseNumber(split[0]);
+                    data.enemies[i].assists = parseNumber(split[1]);
+                    data.enemies[i].deaths = parseNumber(split[2]);
                 }
             }))
             ocrPromises.push(ocr(canvas, stats2, null, 'enemies-' + i+'-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.enemies[i].secondary = cleanupText(res.text)
                     const split = data.enemies[i].secondary.split(' ');
-                    data.enemies[i].damage = parseFloat(split[0]);
-                    data.enemies[i].healing = parseFloat(split[1]);
-                    data.enemies[i].mitigated = parseFloat(split[2]);
+                    data.enemies[i].damage = parseNumber(split[0]);
+                    data.enemies[i].healing = parseNumber(split[1]);
+                    data.enemies[i].mitigated = parseNumber(split[2]);
                 }
             }))
 
