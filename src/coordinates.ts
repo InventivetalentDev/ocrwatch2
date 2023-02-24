@@ -10,6 +10,10 @@ export class Coordinates {
             stats1: {
                 from: [688,193],
                 size: [166,307]
+            },
+            stats2: {
+                from: [858,193],
+                size: [303,305]
             }
         },
         enemies: {
@@ -18,6 +22,10 @@ export class Coordinates {
             stats1: {
                 from: [688,613],
                 size: [166,307]
+            },
+            stats2: {
+                from: [858,615],
+                size: [303,305]
             }
         },
         rowHeight:62,

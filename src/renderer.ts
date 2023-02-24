@@ -9,7 +9,7 @@ import {JobQueue} from "jobqu";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
-const MIN_CONFIDENCE = 50
+const MIN_CONFIDENCE = 60
 
 setTimeout(() => {
     ipcRenderer.send('initVideo');
@@ -59,9 +59,24 @@ let data = {
             duration: 0
         }
     },
-    allies: [{}, {}, {}, {}, {}],
-    enemies: [{}, {}, {}, {}, {}]
+    allies: [],
+    enemies: []
 };
+
+for (let i = 0; i < 5; i++) {
+    let placeholder = {
+        primary: '',
+        secondary: '',
+        eliminations: 0,
+        assists: 0,
+        deaths: 0,
+        damage: 0,
+        healing: 0,
+        mitigated: 0
+    };
+    data.allies.push({...{},...placeholder});
+    data.enemies.push({...{},...placeholder});
+}
 
 async function createVideo(sourceId: string) {
     if (video) {
@@ -222,7 +237,7 @@ function updatePreview() {
             .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
             .rotate(-4.5)
             .crop(0, 19, 200, 25)
-            .threshold({max: 200, autoGreyscale: false});
+            .threshold({max: 220, autoGreyscale: false});
         debugImage('nameplate', nameplate);
         ocrPromises.push(ocr(canvas, nameplate, null, 'self-name')
             .then(res => {
@@ -236,7 +251,7 @@ function updatePreview() {
         .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
         .contrast(0.1)
         .scale(0.5)
-        .threshold({max: 150, autoGreyscale: false});
+        .threshold({max: 170, autoGreyscale: false});
     debugImage('heroName', heroName);
     ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
         Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
@@ -275,6 +290,8 @@ function updatePreview() {
             }
         }))
 
+    document.getElementById('imgDebug').append(document.createElement('br'));
+
 
     {
         ctx.strokeStyle = 'blue';
@@ -285,19 +302,42 @@ function updatePreview() {
             ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.stroke()
 
-            const stats = resized.clone().crop(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.nameAlly.x + Coordinates.scoreboard.offsets.nameAlly.w, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.allies.size[0] - Coordinates.scoreboard.offsets.nameAlly.x - Coordinates.scoreboard.offsets.nameAlly.w, Coordinates.scoreboard.rowHeight)
-                .color([
-                    {apply: "xor", params: ["#127A93"]}
-                ])
-                .grayscale()
+            const stats1 = resized.clone().crop(Coordinates.scoreboard.allies.stats1.from[0], Coordinates.scoreboard.allies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.allies.stats1.size[0], Coordinates.scoreboard.rowHeight)
+                // .color([
+                //     {apply: "xor", params: ["#127A93"]}
+                // ])
                 .invert()
-            debugImage('allies-' + i, stats);
-            ocrPromises.push(ocr(canvas, stats, null, 'allies-' + i).then(res => {
+                .threshold({max:200})
+            const stats2 = resized.clone().crop(Coordinates.scoreboard.allies.stats2.from[0], Coordinates.scoreboard.allies.stats2.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.allies.stats2.size[0], Coordinates.scoreboard.rowHeight)
+                // .color([
+                //     {apply: "xor", params: ["#127A93"]}
+                // ])
+                .invert()
+                .threshold({max:200})
+            debugImage('allies-' + i+'-primary', stats1);
+            debugImage('allies-' + i+'-secondary', stats2);
+            ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i+'-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
-                    data.allies[i].text = cleanupText(res.text)
+                    data.allies[i].primary = cleanupText(res.text)
+                    const split = data.allies[i].primary.split(' ');
+                    data.allies[i].eliminations = parseInt(split[0]);
+                    data.allies[i].assists = parseInt(split[1]);
+                    data.allies[i].deaths = parseInt(split[2]);
                 }
             }))
+            ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i+'-secondary').then(res => {
+                if (res.confidence > MIN_CONFIDENCE) {
+                    data.allies[i].secondary = cleanupText(res.text)
+                    const split = data.allies[i].secondary.split(' ');
+                    data.allies[i].damage = parseFloat(split[0]);
+                    data.allies[i].healing = parseFloat(split[1]);
+                    data.allies[i].mitigated = parseFloat(split[2]);
+                }
+            }))
+
+            document.getElementById('imgDebug').append(document.createElement('br'));
             // for (const offset in Coordinates.scoreboard.offsets) {
             //     if ('nameEnemy' === offset) continue;
             //     const offs = Coordinates.scoreboard.offsets[offset] as Offset;
@@ -324,20 +364,42 @@ function updatePreview() {
             ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
             ctx.stroke()
 
-            const stats = resized.clone().crop(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.nameEnemy.x + Coordinates.scoreboard.offsets.nameEnemy.w, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
-                Coordinates.scoreboard.enemies.size[0] - Coordinates.scoreboard.offsets.nameEnemy.x - Coordinates.scoreboard.offsets.nameEnemy.w, Coordinates.scoreboard.rowHeight)
-                .color([
-                    {apply: "xor", params: ["#8D1E30"]}
-                ])
-                .grayscale()
+            const stats1 = resized.clone().crop(Coordinates.scoreboard.enemies.stats1.from[0], Coordinates.scoreboard.enemies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.enemies.stats1.size[0], Coordinates.scoreboard.rowHeight)
+                // .color([
+                //     {apply: "xor", params: ["#127A93"]}
+                // ])
                 .invert()
-            debugImage('enemies-' + i, stats);
-            ocrPromises.push(ocr(canvas, stats, null, 'enemies-' + i)
-                .then(res => {
+                .threshold({max:200})
+            const stats2 = resized.clone().crop(Coordinates.scoreboard.enemies.stats2.from[0], Coordinates.scoreboard.enemies.stats2.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.enemies.stats2.size[0], Coordinates.scoreboard.rowHeight)
+                // .color([
+                //     {apply: "xor", params: ["#127A93"]}
+                // ])
+                .invert()
+                .threshold({max:200})
+            debugImage('enemies-' + i+'-primary', stats1);
+            debugImage('enemies-' + i+'-secondary', stats2);
+            ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i+'-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
-                    data.enemies[i].text = cleanupText(res.text)
+                    data.enemies[i].primary = cleanupText(res.text)
+                    const split = data.enemies[i].primary.split(' ');
+                    data.enemies[i].eliminations = parseInt(split[0]);
+                    data.enemies[i].assists = parseInt(split[1]);
+                    data.enemies[i].deaths = parseInt(split[2]);
                 }
             }))
+            ocrPromises.push(ocr(canvas, stats2, null, 'enemies-' + i+'-secondary').then(res => {
+                if (res.confidence > MIN_CONFIDENCE) {
+                    data.enemies[i].secondary = cleanupText(res.text)
+                    const split = data.enemies[i].secondary.split(' ');
+                    data.enemies[i].damage = parseFloat(split[0]);
+                    data.enemies[i].healing = parseFloat(split[1]);
+                    data.enemies[i].mitigated = parseFloat(split[2]);
+                }
+            }))
+
+            document.getElementById('imgDebug').append(document.createElement('br'));
             // ocr0(canvas, jmp, Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i,
             //     Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.rowHeight, 'enemies-' + i);
             // for (const offset in Coordinates.scoreboard.offsets) {
