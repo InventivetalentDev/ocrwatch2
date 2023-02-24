@@ -13,7 +13,7 @@ export class Output {
 export class JsonOutput extends Output {
 
     write(data: GameData) {
-        const name = data.times.start.toISOString().replace(/:/g, '');
+        const name = data.status + "-" + data.times.start.toISOString().replace(/:/g, '-');
         const out = `./output/games/game-${name}.json`;
         console.log(out);
         JsonOutput.writeJson(`./output/games/game-${name}.json`, data);
@@ -29,7 +29,7 @@ export class JsonOutput extends Output {
         fs.writeFile(file, JSON.stringify(data, null, 2), {
             encoding: 'utf-8',
             flag: 'w'
-        },err=>{
+        }, err => {
             console.log(err)
         });
     }
