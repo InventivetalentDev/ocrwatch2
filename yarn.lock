@@ -803,6 +803,13 @@
   dependencies:
     defer-to-connect "^2.0.0"
 
+"@timfish/forge-externals-plugin@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.npmjs.org/@timfish/forge-externals-plugin/-/forge-externals-plugin-0.2.0.tgz"
+  integrity sha512-gqQglr/4bIjjEPCY3aGS2uNqfGKSN9umQkrW0WIJUxfVxFIjT3Mw12Im3rVlhTniUHvZXXb/iB/xQg525nS8eg==
+  dependencies:
+    flora-colossus "1.0.1"
+
 "@tokenizer/token@^0.3.0":
   version "0.3.0"
   resolved "https://registry.npmjs.org/@tokenizer/token/-/token-0.3.0.tgz"
@@ -2905,7 +2912,7 @@ flatted@^3.1.0:
   resolved "https://registry.npmjs.org/flatted/-/flatted-3.2.7.tgz"
   integrity sha512-5nqDSxl8nn5BSNxyR3n4I6eDmbolI6WT+QqR547RwxQapgjQBmtktdP+HTBb/a/zLsbzERTONyUB5pefh5TtjQ==
 
-flora-colossus@^1.0.0:
+flora-colossus@^1.0.0, flora-colossus@1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/flora-colossus/-/flora-colossus-1.0.1.tgz"
   integrity sha512-d+9na7t9FyH8gBJoNDSi28mE4NgQVGGvxQ4aHtFRetjyh5SXjuus+V5EZaxFmFdXVemSOrx0lsgEl/ZMjnOWJA==
