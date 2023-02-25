@@ -16,6 +16,7 @@ export class Output {
 export class JsonOutput extends Output {
 
     write(data: GameData) {
+        console.log(data)
         const name = data.status + "-" + data.times.start.toISOString().replace(/:/g, '-');
         const out = `./output/games/game-${name}.json`;
         console.log(out);
@@ -24,7 +25,7 @@ export class JsonOutput extends Output {
 
     writeImage(data: GameData, jmp: Jimp) {
         const name = data.status + "-" + data.times.start.toISOString().replace(/:/g, '-');
-        const out = `./output/games/game-${name}.png`;
+        const out = `./output/games/game-${name}.original.png`;
         console.log(out);
         jmp.write(out);
     }

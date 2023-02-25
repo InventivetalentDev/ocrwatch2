@@ -92,6 +92,8 @@ let data = {...{}, ...DEFAULT_DATA};
 
 try {
     data = JsonOutput.readJson("currentgame.json")
+    data.times.start = new Date(data.times.start);
+    data.times.end = new Date(data.times.end);
     updateDataDebug()
 } catch (e) {
     console.log(e)
@@ -99,6 +101,8 @@ try {
 
 function resetData() {
     data = {...{}, ...DEFAULT_DATA};
+    data.times.start = new Date();
+    data.times.end = new Date();
 }
 
 const outputs = [
@@ -259,11 +263,26 @@ function updatePreview() {
 
 
     const drawOutlines = true;
+    const drawLabels = true;
+
+    ctx.textBaseline = "top";
+    ctx.font = "bold 18px Consolas"
+
+    function drawLabel(label: string, rect: Rect) {
+        const x = rect.from[0];
+        const y = rect.from[1];
+
+        const metrics = ctx.measureText(label);
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(rect.from[0] + rect.size[0] - metrics.width - 6, y, metrics.width + 6, metrics.actualBoundingBoxDescent + 6);
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillText(label, rect.from[0] + rect.size[0] - metrics.width - 2, y + 2);
+    }
 
     const ocrPromises: Promise<void | OcrResult>[] = [];
 
     {
-        if(drawOutlines) {
+        if (drawOutlines) {
             ctx.strokeStyle = 'green';
             // ctx.fillStyle = 'white';
             // ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
@@ -284,6 +303,10 @@ function updatePreview() {
             .then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.self.name = cleanupText(res.text)
+
+                    if (drawLabels) {
+                        drawLabel(data.self.name, Coordinates.self.name);
+                    }
                 }
             }))
     }
@@ -294,7 +317,7 @@ function updatePreview() {
         .scale(0.5)
         .threshold({max: 170, autoGreyscale: false});
     debugImage('heroName', heroName);
-    if(drawOutlines) {
+    if (drawOutlines) {
         ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
             Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
     }
@@ -302,10 +325,14 @@ function updatePreview() {
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 data.self.hero = cleanupText(res.text)
+
+                if (drawLabels) {
+                    drawLabel(data.self.hero, Coordinates.self.hero)
+                }
             }
         }))
 
-    if(drawOutlines) {
+    if (drawOutlines) {
         ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
             Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
     }
@@ -318,10 +345,14 @@ function updatePreview() {
                 data.match.mode = cleanupText(modeSplit[0]);
                 data.match.map = cleanupText(mapSplit[1]);
                 data.match.competitive = mapSplit[0].toUpperCase().includes("COMPETITIVE");
+
+                if (drawLabels) {
+                    drawLabel(data.match.mode + " " + (data.match.competitive ? "(COMP)" : "") + " " + data.match.map, Coordinates.match.wrapper);
+                }
             }
         }))
 
-    if(drawOutlines) {
+    if (drawOutlines) {
         ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
             Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
     }
@@ -332,7 +363,7 @@ function updatePreview() {
             }
         }))
 
-    if(drawOutlines) {
+    if (drawOutlines) {
         ctx.strokeStyle = 'gold';
         ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
             Coordinates.match.time.size[0], Coordinates.match.time.size[1])
@@ -346,6 +377,10 @@ function updatePreview() {
                 time += parseNumber(split[0]) * 60;
                 time += parseNumber(split[1]);
                 data.match.time.duration = time;
+
+                if (drawLabels) {
+                    drawLabel(data.match.time.text, Coordinates.match.time);
+                }
             }
         }))
 
@@ -353,13 +388,13 @@ function updatePreview() {
 
 
     {
-        if(drawOutlines) {
+        if (drawOutlines) {
             ctx.strokeStyle = 'blue';
             ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
                 Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
         }
         for (let i = 0; i < 5; i++) {
-            if(drawOutlines) {
+            if (drawOutlines) {
                 ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.stroke()
@@ -419,13 +454,13 @@ function updatePreview() {
             // }
         }
 
-        if(drawOutlines) {
+        if (drawOutlines) {
             ctx.strokeStyle = 'red';
             ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
                 Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
         }
         for (let i = 0; i < 5; i++) {
-            if(drawOutlines) {
+            if (drawOutlines) {
                 ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.stroke()
@@ -492,15 +527,16 @@ function updatePreview() {
 }
 
 function writeOutputAndReset() {
+    data.times.end = new Date();
     for (const out of outputs) {
         try {
             out.write(data);
         } catch (e) {
             console.log(e);
         }
-        try{
+        try {
             out.writeImage(data, images.get('resized'))
-        }catch (e){
+        } catch (e) {
             console.log(e);
         }
     }
@@ -508,7 +544,7 @@ function writeOutputAndReset() {
         updateDataDebug();
     }, 200);
     setTimeout(() => {
-        data = {...{}, ...DEFAULT_DATA}
+        resetData();
     }, 1000)
     setTimeout(() => {
         updateDataDebug();
