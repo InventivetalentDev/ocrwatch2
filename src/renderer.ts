@@ -55,7 +55,8 @@ const DEFAULT_DATA: GameData = {
     status: 'in_progress',
     self: {
         name: '',
-        hero: ''
+        hero: '',
+        heroes: []
     },
     match: {
         info: '',
@@ -245,7 +246,11 @@ function parseNumber(txt: string): number {
     txt = txt.replace('.', '');
     txt = txt.replace('o', '0');
     txt = txt.replace('O', '0');
-    return parseInt(txt.trim());
+    let parsed = parseInt(txt.trim());
+    if (isNaN(parsed)) {
+        parsed = 0;
+    }
+    return parsed;
 }
 
 function updatePreview() {
@@ -303,10 +308,9 @@ function updatePreview() {
             .then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.self.name = cleanupText(res.text)
-
-                    if (drawLabels) {
-                        drawLabel(data.self.name, Coordinates.self.name);
-                    }
+                }
+                if (drawLabels) {
+                    drawLabel(data.self.name, Coordinates.self.name);
                 }
             }))
     }
@@ -325,10 +329,12 @@ function updatePreview() {
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 data.self.hero = cleanupText(res.text)
-
-                if (drawLabels) {
-                    drawLabel(data.self.hero, Coordinates.self.hero)
+                if (data.self.heroes.indexOf(data.self.hero) < 0) {
+                    data.self.heroes.push(data.self.hero);
                 }
+            }
+            if (drawLabels) {
+                drawLabel(data.self.hero, Coordinates.self.hero)
             }
         }))
 
@@ -345,10 +351,9 @@ function updatePreview() {
                 data.match.mode = cleanupText(modeSplit[0]);
                 data.match.map = cleanupText(mapSplit[1]);
                 data.match.competitive = mapSplit[0].toUpperCase().includes("COMPETITIVE");
-
-                if (drawLabels) {
-                    drawLabel(data.match.mode + " " + (data.match.competitive ? "(COMP)" : "") + " " + data.match.map, Coordinates.match.wrapper);
-                }
+            }
+            if (drawLabels) {
+                drawLabel(data.match.mode + " " + (data.match.competitive ? "(COMP)" : "") + " " + data.match.map, Coordinates.match.wrapper);
             }
         }))
 
@@ -377,10 +382,9 @@ function updatePreview() {
                 time += parseNumber(split[0]) * 60;
                 time += parseNumber(split[1]);
                 data.match.time.duration = time;
-
-                if (drawLabels) {
-                    drawLabel(data.match.time.text, Coordinates.match.time);
-                }
+            }
+            if (drawLabels) {
+                drawLabel(data.match.time.text, Coordinates.match.time);
             }
         }))
 
@@ -420,45 +424,45 @@ function updatePreview() {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.allies[i].primary = cleanupText(res.text)
                     const split = data.allies[i].primary.split(' ');
-                    data.allies[i].eliminations = parseNumber(split[0]);
-                    data.allies[i].assists = parseNumber(split[1]);
-                    data.allies[i].deaths = parseNumber(split[2]);
-
-                    drawLabel(`${data.allies[i].eliminations}`,{
-                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.elims.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.allies[i].assists}`,{
-                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.assists.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.allies[i].deaths}`,{
-                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.deaths.w,Coordinates.scoreboard.rowHeight]
-                    })
+                    data.allies[i].eliminations = Math.max(parseNumber(split[0]), data.allies[i].eliminations);
+                    data.allies[i].assists = Math.max(parseNumber(split[1]), data.allies[i].assists);
+                    data.allies[i].deaths = Math.max(parseNumber(split[2]), data.allies[i].deaths);
                 }
+
+                drawLabel(`${data.allies[i].eliminations}`, {
+                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.elims.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.allies[i].assists}`, {
+                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.allies[i].deaths}`, {
+                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
+                })
             }))
             ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i + '-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.allies[i].secondary = cleanupText(res.text)
                     const split = data.allies[i].secondary.split(' ');
-                    data.allies[i].damage = parseNumber(split[0]);
-                    data.allies[i].healing = parseNumber(split[1]);
-                    data.allies[i].mitigated = parseNumber(split[2]);
-
-                    drawLabel(`${data.allies[i].damage}`,{
-                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.damage.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.allies[i].healing}`,{
-                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.healing.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.allies[i].mitigated}`,{
-                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.mitigated.w,Coordinates.scoreboard.rowHeight]
-                    })
+                    data.allies[i].damage = Math.max(parseNumber(split[0]), data.allies[i].damage);
+                    data.allies[i].healing = Math.max(parseNumber(split[1]), data.allies[i].healing);
+                    data.allies[i].mitigated = Math.max(parseNumber(split[2]), data.allies[i].mitigated);
                 }
+
+                drawLabel(`${data.allies[i].damage}`, {
+                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.damage.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.allies[i].healing}`, {
+                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.healing.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.allies[i].mitigated}`, {
+                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.mitigated.w, Coordinates.scoreboard.rowHeight]
+                })
             }))
 
             document.getElementById('imgDebug').append(document.createElement('br'));
@@ -498,59 +502,57 @@ function updatePreview() {
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
-                .threshold({max: 200})
+                .threshold({max: 220})
             const stats2 = resized.clone().crop(Coordinates.scoreboard.enemies.stats2.from[0], Coordinates.scoreboard.enemies.stats2.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.stats2.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
-                .threshold({max: 200})
+                .threshold({max: 220})
             debugImage('enemies-' + i + '-primary', stats1);
             debugImage('enemies-' + i + '-secondary', stats2);
             ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i + '-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.enemies[i].primary = cleanupText(res.text)
                     const split = data.enemies[i].primary.split(' ');
-                    data.enemies[i].eliminations = parseNumber(split[0]);
-                    data.enemies[i].assists = parseNumber(split[1]);
-                    data.enemies[i].deaths = parseNumber(split[2]);
-
-                    drawLabel(`${data.enemies[i].eliminations}`,{
-                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.elims.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.enemies[i].assists}`,{
-                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.assists.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.enemies[i].deaths}`,{
-                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.deaths.w,Coordinates.scoreboard.rowHeight]
-                    })
+                    data.enemies[i].eliminations = Math.max(parseNumber(split[0]), data.enemies[i].eliminations);
+                    data.enemies[i].assists = Math.max(parseNumber(split[1]), data.enemies[i].assists);
+                    data.enemies[i].deaths = Math.max(parseNumber(split[2]), data.enemies[i].deaths);
                 }
+                drawLabel(`${data.enemies[i].eliminations}`, {
+                    from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.elims.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.enemies[i].assists}`, {
+                    from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.enemies[i].deaths}`, {
+                    from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
+                })
             }))
             ocrPromises.push(ocr(canvas, stats2, null, 'enemies-' + i + '-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.enemies[i].secondary = cleanupText(res.text)
                     const split = data.enemies[i].secondary.split(' ');
-                    data.enemies[i].damage = parseNumber(split[0]);
-                    data.enemies[i].healing = parseNumber(split[1]);
-                    data.enemies[i].mitigated = parseNumber(split[2]);
-
-                    drawLabel(`${data.enemies[i].damage}`,{
-                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.damage.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.enemies[i].healing}`,{
-                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.healing.w,Coordinates.scoreboard.rowHeight]
-                    });
-                    drawLabel(`${data.enemies[i].mitigated}`,{
-                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
-                        size: [Coordinates.scoreboard.offsets.mitigated.w,Coordinates.scoreboard.rowHeight]
-                    })
+                    data.enemies[i].damage = Math.max(parseNumber(split[0]), data.enemies[i].damage);
+                    data.enemies[i].healing = Math.max(parseNumber(split[1]), data.enemies[i].healing);
+                    data.enemies[i].mitigated = Math.max(parseNumber(split[2]), data.enemies[i].mitigated);
                 }
+                drawLabel(`${data.enemies[i].damage}`, {
+                    from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.damage.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.enemies[i].healing}`, {
+                    from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.healing.w, Coordinates.scoreboard.rowHeight]
+                });
+                drawLabel(`${data.enemies[i].mitigated}`, {
+                    from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.offsets.mitigated.w, Coordinates.scoreboard.rowHeight]
+                })
             }))
 
             document.getElementById('imgDebug').append(document.createElement('br'));
@@ -610,6 +612,7 @@ function updateDataDebug() {
 const winButton = document.getElementById('winButton') as HTMLButtonElement;
 const drawButton = document.getElementById('drawButton') as HTMLButtonElement;
 const lossButton = document.getElementById('lossButton') as HTMLButtonElement;
+const resetButton = document.getElementById('resetButton') as HTMLButtonElement;
 winButton.addEventListener('click', () => {
     data.status = 'win';
     writeOutputAndReset();
@@ -632,6 +635,14 @@ lossButton.addEventListener('click', () => {
     lossButton.disabled = true;
     setTimeout(() => {
         lossButton.disabled = false;
+    }, 1000);
+})
+resetButton.addEventListener('click', () => {
+    data.status = 'reset';
+    writeOutputAndReset()
+    lossButton.disabled = true;
+    setTimeout(() => {
+        resetButton.disabled = false;
     }, 1000);
 })
 

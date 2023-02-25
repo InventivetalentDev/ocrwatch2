@@ -39,10 +39,11 @@ export interface GameData {
         start: Date,
         end: Date
     },
-    status: 'in_progress' | 'win' | 'draw' | 'loss'
+    status: 'in_progress' | 'win' | 'draw' | 'loss'|'reset'
     self: {
         name: string,
-        hero: string
+        hero: string,
+        heroes: string[]
     },
     match: {
         info: string,
