@@ -406,6 +406,8 @@ function updatePreview() {
         }
         for (let i = 0; i < 5; i++) {
             if (drawOutlines) {
+                ctx.strokeStyle = 'blue';
+                ctx.beginPath();
                 ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.stroke()
@@ -498,6 +500,8 @@ function updatePreview() {
         }
         for (let i = 0; i < 5; i++) {
             if (drawOutlines) {
+                ctx.strokeStyle = 'red';
+                ctx.beginPath();
                 ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.stroke()
