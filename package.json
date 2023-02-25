@@ -44,6 +44,7 @@
     "typescript": "~4.5.4"
   },
   "dependencies": {
+    "deepmerge": "^4.3.0",
     "electron-squirrel-startup": "^1.0.0",
     "imagescript": "^1.2.16",
     "jimp": "^0.22.4",

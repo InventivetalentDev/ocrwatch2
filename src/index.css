@@ -53,7 +53,7 @@ img, canvas {
 
 button {
     cursor: pointer;
-    border: none;
+    border: 2px solid gray;
     padding: 8px;
     margin: 2px;
 }

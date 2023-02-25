@@ -9,10 +9,11 @@ import Jimp from "jimp/es";
 import {GameData, OcrRequest, OcrResult, Offset, PlayerData, Rect} from "./types";
 import {JobQueue} from "jobqu";
 import {JsonOutput} from "./output/output";
+import deepmerge from "deepmerge";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
-const MIN_CONFIDENCE = 70
+const MIN_CONFIDENCE = 75
 
 setTimeout(() => {
     ipcRenderer.send('initVideo');
@@ -74,7 +75,7 @@ const DEFAULT_DATA: GameData = {
         map: '',
         competitive: false,
         time: {
-            text: '',
+            text: '0:00',
             duration: 0
         }
     },
@@ -82,17 +83,17 @@ const DEFAULT_DATA: GameData = {
     allies: [],
     enemies: [],
     sums: {
-        allies: {...{}, ...DEFAULT_PLAYER},
-        enemies: {...{}, ...DEFAULT_PLAYER}
+        allies: deepmerge({}, DEFAULT_PLAYER),
+        enemies: deepmerge({}, DEFAULT_PLAYER)
     }
 };
 
 for (let i = 0; i < 5; i++) {
-    DEFAULT_DATA.allies.push({...{}, ...DEFAULT_PLAYER});
-    DEFAULT_DATA.enemies.push({...{}, ...DEFAULT_PLAYER});
+    DEFAULT_DATA.allies.push(deepmerge({}, DEFAULT_PLAYER));
+    DEFAULT_DATA.enemies.push(deepmerge({}, DEFAULT_PLAYER));
 }
 
-let data = {...{}, ...DEFAULT_DATA};
+let data = deepmerge({}, DEFAULT_DATA);
 
 
 try {
@@ -108,7 +109,7 @@ try {
 }
 
 function resetData() {
-    data = {...{}, ...DEFAULT_DATA};
+    data = deepmerge({}, DEFAULT_DATA);
     data.times.start = new Date();
     data.times.end = new Date();
 }
@@ -260,7 +261,14 @@ function parseNumber(txt: string): number {
     return parsed;
 }
 
+let ocrRunning = false
+
 function updatePreview() {
+    if (ocrRunning) {
+        return;
+    }
+    ocrRunning = true;
+
     const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
     const jmp = images.get(imageSelect.value);
     const resized = images.get('resized');
@@ -352,12 +360,18 @@ function updatePreview() {
     ocrPromises.push(ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
+                let prevMap = data.match.map;
+
                 data.match.info = cleanupText(res.text);
                 const mapSplit = data.match.info.split("|");
                 const modeSplit = mapSplit[0].split("-");
                 data.match.mode = cleanupText(modeSplit[0]);
                 data.match.map = cleanupText(mapSplit[1]);
                 data.match.competitive = mapSplit[0].toUpperCase().includes("COMPETITIVE");
+
+                if (data.match.map != prevMap) {
+                    // resetData();
+                }
             }
             if (drawLabels) {
                 drawLabel(data.match.mode + " " + (data.match.competitive ? "(COMP)" : "") + " " + data.match.map, Coordinates.match.wrapper);
@@ -388,7 +402,13 @@ function updatePreview() {
                 let time = 0;
                 time += parseNumber(split[0]) * 60;
                 time += parseNumber(split[1]);
+
+                let prevDuration = data.match.time.duration;
                 data.match.time.duration = time;
+
+                if (data.match.time.duration > prevDuration) {
+                    // resetData();
+                }
             }
             if (drawLabels) {
                 drawLabel(data.match.time.text, Coordinates.match.time);
@@ -652,6 +672,8 @@ function updatePreview() {
             screenshotStatus.textContent = "Ready"
 
             JsonOutput.writeJson("currentgame.json", data);
+
+            ocrRunning = false
         })
 
 }
@@ -666,7 +688,7 @@ function writeOutputAndReset() {
             console.log(e);
         }
         try {
-            out.writeImage(data, images.get('resized'))
+            out.writeImage(data, images.get('resized'), canvas.toDataURL('image/png'))
         } catch (e) {
             console.log(e);
         }
@@ -717,7 +739,7 @@ lossButton.addEventListener('click', () => {
 resetButton.addEventListener('click', () => {
     data.status = 'reset';
     writeOutputAndReset()
-    lossButton.disabled = true;
+    resetButton.disabled = true;
     setTimeout(() => {
         resetButton.disabled = false;
     }, 1000);

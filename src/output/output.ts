@@ -8,7 +8,7 @@ export class Output {
     write(data: GameData): void {
     }
 
-    writeImage(data: GameData, jmp: Jimp): void {
+    writeImage(data: GameData, jmp: Jimp, canvas: string): void {
     }
 
 }
@@ -23,11 +23,14 @@ export class JsonOutput extends Output {
         JsonOutput.writeJson(`./output/games/game-${name}.json`, data);
     }
 
-    writeImage(data: GameData, jmp: Jimp) {
+    writeImage(data: GameData, jmp: Jimp, canvas: string) {
         const name = data.status + "-" + data.times.start.toISOString().replace(/:/g, '-');
-        const out = `./output/games/game-${name}.original.png`;
-        console.log(out);
-        jmp.write(out);
+        const out1 = `./output/games/game-${name}.original.png`;
+        console.log(out1);
+        jmp.write(out1);
+        const out2 = `./output/games/game-${name}.labelled.png`;
+        console.log(out2)
+        fs.writeFileSync(out2, Buffer.from(canvas.substring('data:image/png;base64,'.length), 'base64'))
     }
 
     static readJson(file: string): GameData {
