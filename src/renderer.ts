@@ -47,6 +47,16 @@ const video = document.querySelector('video');
 const videoCanvas = document.createElement('canvas');
 let stream: MediaStream;
 
+const DEFAULT_PLAYER: PlayerData = {
+    primary: '',
+    secondary: '',
+    eliminations: 0,
+    assists: 0,
+    deaths: 0,
+    damage: 0,
+    healing: 0,
+    mitigated: 0
+};
 const DEFAULT_DATA: GameData = {
     times: {
         start: new Date(),
@@ -70,22 +80,16 @@ const DEFAULT_DATA: GameData = {
     },
     performance: {},
     allies: [],
-    enemies: []
+    enemies: [],
+    sums: {
+        allies: {...{}, ...DEFAULT_PLAYER},
+        enemies: {...{}, ...DEFAULT_PLAYER}
+    }
 };
 
 for (let i = 0; i < 5; i++) {
-    const placeholder: PlayerData = {
-        primary: '',
-        secondary: '',
-        eliminations: 0,
-        assists: 0,
-        deaths: 0,
-        damage: 0,
-        healing: 0,
-        mitigated: 0
-    };
-    DEFAULT_DATA.allies.push({...{}, ...placeholder});
-    DEFAULT_DATA.enemies.push({...{}, ...placeholder});
+    DEFAULT_DATA.allies.push({...{}, ...DEFAULT_PLAYER});
+    DEFAULT_DATA.enemies.push({...{}, ...DEFAULT_PLAYER});
 }
 
 let data = {...{}, ...DEFAULT_DATA};
@@ -573,7 +577,24 @@ function updatePreview() {
     setTimeout(() => {
         updateDataDebug();
     }, 1000);
-    Promise.all(ocrPromises).then(() => {
+    Promise.all(ocrPromises)
+        .then(()=>{
+            data.sums.allies.eliminations = data.allies.map(p => p.eliminations).reduce((a, b) => a + b, 0);
+            data.sums.allies.assists = data.allies.map(p => p.assists).reduce((a, b) => a + b, 0);
+            data.sums.allies.deaths = data.allies.map(p => p.deaths).reduce((a, b) => a + b, 0);
+            data.sums.allies.damage = data.allies.map(p => p.damage).reduce((a, b) => a + b, 0);
+            data.sums.allies.healing= data.allies.map(p => p.healing).reduce((a, b) => a + b, 0);
+            data.sums.allies.mitigated = data.allies.map(p => p.mitigated).reduce((a, b) => a + b, 0);
+
+            data.sums.enemies.eliminations = data.enemies.map(p => p.eliminations).reduce((a, b) => a + b, 0);
+            data.sums.enemies.assists = data.enemies.map(p => p.assists).reduce((a, b) => a + b, 0);
+            data.sums.enemies.deaths = data.enemies.map(p => p.deaths).reduce((a, b) => a + b, 0);
+            data.sums.enemies.damage = data.enemies.map(p => p.damage).reduce((a, b) => a + b, 0);
+            data.sums.enemies.healing= data.enemies.map(p => p.healing).reduce((a, b) => a + b, 0);
+            data.sums.enemies.mitigated = data.enemies.map(p => p.mitigated).reduce((a, b) => a + b, 0);
+        })
+        .then(() => {
+
         updateDataDebug();
 
         screenshotStatus.textContent = "Ready"

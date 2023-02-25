@@ -57,5 +57,9 @@ export interface GameData {
     },
     performance: any,
     allies: PlayerData[],
-    enemies: PlayerData[]
+    enemies: PlayerData[],
+    sums: {
+        allies: PlayerData,
+        enemies: PlayerData
+    }
 }

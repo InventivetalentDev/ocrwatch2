@@ -47,6 +47,10 @@ video {
     max-width: 400px;
 }
 
+img, canvas {
+    border: 1px solid black;
+}
+
 button {
     cursor: pointer;
     border: none;
