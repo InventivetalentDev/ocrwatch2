@@ -8,7 +8,7 @@ import {createWorker, RecognizeOptions, Worker} from "tesseract.js";
 import Jimp from "jimp/es";
 import {GameData, OcrRequest, OcrResult, Offset, PlayerData, Rect} from "./types";
 import {JobQueue} from "jobqu";
-import {JsonOutput} from "./output/output";
+import {CSVOutput, JsonOutput, TSVOutput} from "./output/output";
 import deepmerge from "deepmerge";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
@@ -93,6 +93,14 @@ for (let i = 0; i < 5; i++) {
     DEFAULT_DATA.enemies.push(deepmerge({}, DEFAULT_PLAYER));
 }
 
+const RANKS = [];
+const RANK_NAMES = ["bronze", "silver", "gold", "platinum", "diamond", "master", "grandmaster"];
+for (let name of RANK_NAMES) {
+    for (let i = 1; i <= 5; i++) {
+        RANKS.push(name + "" + i);
+    }
+}
+
 let data = deepmerge({}, DEFAULT_DATA);
 
 
@@ -115,7 +123,9 @@ function resetData() {
 }
 
 const outputs = [
-    new JsonOutput()
+    new JsonOutput(),
+    new TSVOutput(),
+    new CSVOutput()
 ]
 
 async function createVideo(sourceId: string) {

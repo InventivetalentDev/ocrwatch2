@@ -50,3 +50,66 @@ export class JsonOutput extends Output {
     }
 
 }
+
+export class RowOutput extends Output {
+
+    getHeader() {
+        return [
+            "time",
+            "status",
+            "account",
+            "hero",
+            "mode",
+            "map",
+            "competitive",
+            "duration"
+        ];
+    }
+
+    makeRow(data: GameData): (string|number|boolean)[] {
+        return [
+            data.times.start.toISOString(),
+            data.status,
+            data.self.name,
+            data.self.heroes.join(','),
+            data.match.mode,
+            data.match.map,
+            data.match.competitive,
+            data.match.time.duration
+        ];
+    }
+
+    writeRow(out: string, row: string) {
+        fs.writeFileSync(out, row, {
+            encoding: 'utf-8',
+            flag: 'a'
+        })
+    }
+
+}
+
+export class TSVOutput extends RowOutput {
+
+    writeGame(data: GameData) {
+        const row = this.makeRow(data).join("\t");
+        const out = "./output/games.tsv";
+        if (!fs.existsSync(out)) {
+            this.writeRow(out, this.getHeader().join('\t'))
+        }
+        this.writeRow(out, row);
+    }
+
+}
+
+export class CSVOutput extends RowOutput {
+
+    writeGame(data: GameData) {
+        const row = this.makeRow(data).join(",");
+        const out = "./output/games.csv";
+        if (!fs.existsSync(out)) {
+            this.writeRow(out, this.getHeader().join(','))
+        }
+        this.writeRow(out, row);
+    }
+
+}
