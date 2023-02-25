@@ -66,7 +66,7 @@ export class RowOutput extends Output {
         ];
     }
 
-    makeRow(data: GameData): (string|number|boolean)[] {
+    makeRow(data: GameData): (string | number | boolean)[] {
         return [
             data.times.start.toISOString(),
             data.status,
@@ -80,7 +80,7 @@ export class RowOutput extends Output {
     }
 
     writeRow(out: string, row: string) {
-        fs.writeFileSync(out, row, {
+        fs.writeFileSync(out, row + '\n', {
             encoding: 'utf-8',
             flag: 'a'
         })
