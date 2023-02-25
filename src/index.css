@@ -53,6 +53,10 @@ button {
     padding: 8px;
     margin: 2px;
 }
+button:disabled {
+    cursor: wait;
+    background-color: gray;
+}
 
 #winButton {
     background-color: green;

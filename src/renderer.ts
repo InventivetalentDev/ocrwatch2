@@ -257,20 +257,23 @@ function updatePreview() {
 
     screenshotStatus.textContent = "Running OCR...";
 
-    //TODO: toggle
 
-    const ocrPromises: Promise<void|OcrResult>[] = [];
+    const drawOutlines = true;
+
+    const ocrPromises: Promise<void | OcrResult>[] = [];
 
     {
-        ctx.strokeStyle = 'green';
-        // ctx.fillStyle = 'white';
-        // ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
-        // ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1]); // top right
-        // ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.1); // top right
-        // ctx.lineTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.4); // mid left
-        // ctx.fill();
-        ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
-            Coordinates.self.name.size[0], Coordinates.self.name.size[1])
+        if(drawOutlines) {
+            ctx.strokeStyle = 'green';
+            // ctx.fillStyle = 'white';
+            // ctx.moveTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1]); // top left
+            // ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1]); // top right
+            // ctx.lineTo(Coordinates.self.name.from[0] + Coordinates.self.name.size[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.1); // top right
+            // ctx.lineTo(Coordinates.self.name.from[0], Coordinates.self.name.from[1] + Coordinates.self.name.size[1] * 0.4); // mid left
+            // ctx.fill();
+            ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
+                Coordinates.self.name.size[0], Coordinates.self.name.size[1])
+        }
         const nameplate = jmp.clone()
             .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
             .rotate(-4.5)
@@ -291,8 +294,10 @@ function updatePreview() {
         .scale(0.5)
         .threshold({max: 170, autoGreyscale: false});
     debugImage('heroName', heroName);
-    ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
-        Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
+    if(drawOutlines) {
+        ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
+            Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
+    }
     ocrPromises.push(ocr(canvas, heroName, null, 'self-hero')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
@@ -300,8 +305,10 @@ function updatePreview() {
             }
         }))
 
-    ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
-        Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
+    if(drawOutlines) {
+        ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
+            Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
+    }
     ocrPromises.push(ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
@@ -314,8 +321,10 @@ function updatePreview() {
             }
         }))
 
-    ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
-        Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
+    if(drawOutlines) {
+        ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
+            Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
+    }
     ocrPromises.push(ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
@@ -323,13 +332,20 @@ function updatePreview() {
             }
         }))
 
-    ctx.strokeStyle = 'gold';
-    ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
-        Coordinates.match.time.size[0], Coordinates.match.time.size[1])
+    if(drawOutlines) {
+        ctx.strokeStyle = 'gold';
+        ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
+            Coordinates.match.time.size[0], Coordinates.match.time.size[1])
+    }
     ocrPromises.push(ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
-                data.match.time.text = cleanupText(res.text)
+                data.match.time.text = cleanupText(res.text);
+                const split = data.match.time.text.split(':');
+                let time = 0;
+                time += parseNumber(split[0]) * 60;
+                time += parseNumber(split[1]);
+                data.match.time.duration = time;
             }
         }))
 
@@ -337,13 +353,17 @@ function updatePreview() {
 
 
     {
-        ctx.strokeStyle = 'blue';
-        ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
-            Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
+        if(drawOutlines) {
+            ctx.strokeStyle = 'blue';
+            ctx.strokeRect(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
+                Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
+        }
         for (let i = 0; i < 5; i++) {
-            ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.stroke()
+            if(drawOutlines) {
+                ctx.moveTo(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
+                ctx.lineTo(Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i)
+                ctx.stroke()
+            }
 
             const stats1 = resized.clone().crop(Coordinates.scoreboard.allies.stats1.from[0], Coordinates.scoreboard.allies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.stats1.size[0], Coordinates.scoreboard.rowHeight)
@@ -399,13 +419,17 @@ function updatePreview() {
             // }
         }
 
-        ctx.strokeStyle = 'red';
-        ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
-            Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+        if(drawOutlines) {
+            ctx.strokeStyle = 'red';
+            ctx.strokeRect(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1],
+                Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.size[1]);
+        }
         for (let i = 0; i < 5; i++) {
-            ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
-            ctx.stroke()
+            if(drawOutlines) {
+                ctx.moveTo(Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
+                ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
+                ctx.stroke()
+            }
 
             const stats1 = resized.clone().crop(Coordinates.scoreboard.enemies.stats1.from[0], Coordinates.scoreboard.enemies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.stats1.size[0], Coordinates.scoreboard.rowHeight)
@@ -474,6 +498,11 @@ function writeOutputAndReset() {
         } catch (e) {
             console.log(e);
         }
+        try{
+            out.writeImage(data, images.get('resized'))
+        }catch (e){
+            console.log(e);
+        }
     }
     setTimeout(() => {
         updateDataDebug();
@@ -490,17 +519,32 @@ function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
 }
 
-document.getElementById('winButton').addEventListener('click', () => {
+const winButton = document.getElementById('winButton') as HTMLButtonElement;
+const drawButton = document.getElementById('drawButton') as HTMLButtonElement;
+const lossButton = document.getElementById('lossButton') as HTMLButtonElement;
+winButton.addEventListener('click', () => {
     data.status = 'win';
     writeOutputAndReset();
+    winButton.disabled = true;
+    setTimeout(() => {
+        winButton.disabled = false;
+    }, 1000);
 })
-document.getElementById('drawButton').addEventListener('click', () => {
+drawButton.addEventListener('click', () => {
     data.status = 'draw';
     writeOutputAndReset()
+    drawButton.disabled = true;
+    setTimeout(() => {
+        drawButton.disabled = false;
+    }, 1000);
 })
-document.getElementById('lossButton').addEventListener('click', () => {
+lossButton.addEventListener('click', () => {
     data.status = 'loss';
     writeOutputAndReset()
+    lossButton.disabled = true;
+    setTimeout(() => {
+        lossButton.disabled = false;
+    }, 1000);
 })
 
 const workers = 16;

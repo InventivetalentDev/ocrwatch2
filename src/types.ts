@@ -3,6 +3,8 @@ import Jimp from "jimp";
 export interface Rect {
     from: [number, number];
     size: [number, number];
+
+    [key: string]: any | Rect;
 }
 
 export interface Offset {

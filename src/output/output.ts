@@ -1,11 +1,14 @@
 import {GameData} from "../types";
 import * as fs from "fs";
-import {mkdirp} from "mkdirp";
+import Jimp from "jimp";
 
 
 export class Output {
 
-    write(data: GameData) {
+    write(data: GameData): void {
+    }
+
+    writeImage(data: GameData, jmp: Jimp): void {
     }
 
 }
@@ -17,6 +20,13 @@ export class JsonOutput extends Output {
         const out = `./output/games/game-${name}.json`;
         console.log(out);
         JsonOutput.writeJson(`./output/games/game-${name}.json`, data);
+    }
+
+    writeImage(data: GameData, jmp: Jimp) {
+        const name = data.status + "-" + data.times.start.toISOString().replace(/:/g, '-');
+        const out = `./output/games/game-${name}.png`;
+        console.log(out);
+        jmp.write(out);
     }
 
     static readJson(file: string): GameData {
