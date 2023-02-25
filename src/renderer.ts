@@ -683,7 +683,7 @@ function writeOutputAndReset() {
     JsonOutput.writeJson("currentgame.json", data);
     for (const out of outputs) {
         try {
-            out.write(data);
+            out.writeGame(data);
         } catch (e) {
             console.log(e);
         }

@@ -5,7 +5,7 @@ import Jimp from "jimp";
 
 export class Output {
 
-    write(data: GameData): void {
+    writeGame(data: GameData): void {
     }
 
     writeImage(data: GameData, jmp: Jimp, canvas: string): void {
@@ -15,7 +15,7 @@ export class Output {
 
 export class JsonOutput extends Output {
 
-    write(data: GameData) {
+    writeGame(data: GameData) {
         console.log(data)
         const name = data.times.start.toISOString().replace(/:/g, '-') + "-" + data.status;
         const out = `./output/games/game-${name}.json`;
