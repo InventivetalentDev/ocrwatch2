@@ -348,7 +348,7 @@ function updatePreview() {
         .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
         .contrast(0.1)
         .scale(0.5)
-        .threshold({max: 170, autoGreyscale: false});
+        .threshold({max: 175, autoGreyscale: false});
     debugImage('heroName', heroName);
     if (drawOutlines) {
         ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
@@ -638,49 +638,49 @@ function updatePreview() {
             drawLabel(`${data.sums.allies.assists}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.allies.assists > data.sums.enemies.assists ? GREEN : RED)
+            }, data.sums.allies.assists > data.sums.enemies.assists ? GREEN : RED)
             drawLabel(`${data.sums.allies.deaths}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.allies.deaths < data.sums.enemies.deaths ? GREEN : RED)
+            }, data.sums.allies.deaths < data.sums.enemies.deaths ? GREEN : RED)
             drawLabel(`${data.sums.allies.damage}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.damage.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.allies.damage > data.sums.enemies.damage ? GREEN : RED)
+            }, data.sums.allies.damage > data.sums.enemies.damage ? GREEN : RED)
             drawLabel(`${data.sums.allies.healing}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.healing.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.allies.healing > data.sums.enemies.healing ? GREEN : RED)
+            }, data.sums.allies.healing > data.sums.enemies.healing ? GREEN : RED)
             drawLabel(`${data.sums.allies.mitigated}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.mitigated.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.allies.mitigated > data.sums.enemies.mitigated ? GREEN : RED)
+            }, data.sums.allies.mitigated > data.sums.enemies.mitigated ? GREEN : RED)
 
 
             drawLabel(`${data.sums.enemies.eliminations}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.elims.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.enemies.eliminations > data.sums.allies.eliminations ? GREEN : RED)
+            }, data.sums.enemies.eliminations > data.sums.allies.eliminations ? GREEN : RED)
             drawLabel(`${data.sums.enemies.assists}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.enemies.assists > data.sums.allies.assists ? GREEN : RED)
+            }, data.sums.enemies.assists > data.sums.allies.assists ? GREEN : RED)
             drawLabel(`${data.sums.enemies.deaths}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.enemies.deaths < data.sums.allies.deaths ? GREEN : RED)
+            }, data.sums.enemies.deaths < data.sums.allies.deaths ? GREEN : RED)
             drawLabel(`${data.sums.enemies.damage}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.damage.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.enemies.damage > data.sums.allies.damage ? GREEN : RED)
+            }, data.sums.enemies.damage > data.sums.allies.damage ? GREEN : RED)
             drawLabel(`${data.sums.enemies.healing}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.healing.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.enemies.healing > data.sums.allies.healing ? GREEN : RED)
+            }, data.sums.enemies.healing > data.sums.allies.healing ? GREEN : RED)
             drawLabel(`${data.sums.enemies.mitigated}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.mitigated.w, Coordinates.scoreboard.rowHeight]
-            },data.sums.enemies.mitigated > data.sums.allies.mitigated ? GREEN : RED)
+            }, data.sums.enemies.mitigated > data.sums.allies.mitigated ? GREEN : RED)
         })
         .then(() => {
 
@@ -878,6 +878,7 @@ function updateTextDebug(id: string, text: string, confidence: number, init = fa
     }
     element.children.item(0).textContent = id;
     element.children.item(1).textContent = `${confidence}`;
+    (element.children.item(1) as HTMLElement).style.color = (confidence > MIN_CONFIDENCE ? 'green' : 'red');
     element.children.item(2).textContent = text;
     // element.textContent = `[${id}] ${text}`;
 }
