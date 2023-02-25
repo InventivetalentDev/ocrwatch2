@@ -18,6 +18,10 @@ div:not(:has(>div)) {
     max-height: 90vh;
 }
 
+canvas {
+    cursor: crosshair;
+}
+
 .img-debug {
     max-width: 30vw;
 }
