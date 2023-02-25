@@ -298,14 +298,18 @@ function updatePreview() {
     ctx.textBaseline = "top";
     ctx.font = "bold 18px Consolas"
 
-    function drawLabel(label: string, rect: Rect) {
+    const WHITE = 'rgba(255,255,255,0.9)';
+    const GREEN = 'rgba(62,255,62,0.9)';
+    const RED = 'rgba(255,36,36,0.9)';
+
+    function drawLabel(label: string, rect: Rect, textStyle = WHITE) {
         const x = rect.from[0];
         const y = rect.from[1];
 
         const metrics = ctx.measureText(label);
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.fillRect(rect.from[0] + rect.size[0] - metrics.width - 6, y, metrics.width + 6, metrics.actualBoundingBoxDescent + 6);
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillStyle = textStyle;
         ctx.fillText(label, rect.from[0] + rect.size[0] - metrics.width - 2, y + 2);
     }
 
@@ -370,7 +374,7 @@ function updatePreview() {
     ocrPromises.push(ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
-                let prevMap = data.match.map;
+                const prevMap = data.match.map;
 
                 data.match.info = cleanupText(res.text);
                 const mapSplit = data.match.info.split("|");
@@ -413,7 +417,7 @@ function updatePreview() {
                 time += parseNumber(split[0]) * 60;
                 time += parseNumber(split[1]);
 
-                let prevDuration = data.match.time.duration;
+                const prevDuration = data.match.time.duration;
                 data.match.time.duration = time;
 
                 if (data.match.time.duration > prevDuration) {
@@ -614,66 +618,69 @@ function updatePreview() {
     Promise.all(ocrPromises)
         .then(() => {
             data.sums.allies.eliminations = data.allies.map(p => p.eliminations).reduce((a, b) => a + b, 0);
+            data.sums.allies.assists = data.allies.map(p => p.assists).reduce((a, b) => a + b, 0);
+            data.sums.allies.deaths = data.allies.map(p => p.deaths).reduce((a, b) => a + b, 0);
+            data.sums.allies.damage = data.allies.map(p => p.damage).reduce((a, b) => a + b, 0);
+            data.sums.allies.healing = data.allies.map(p => p.healing).reduce((a, b) => a + b, 0);
+            data.sums.allies.mitigated = data.allies.map(p => p.mitigated).reduce((a, b) => a + b, 0);
+
+            data.sums.enemies.eliminations = data.enemies.map(p => p.eliminations).reduce((a, b) => a + b, 0);
+            data.sums.enemies.assists = data.enemies.map(p => p.assists).reduce((a, b) => a + b, 0);
+            data.sums.enemies.deaths = data.enemies.map(p => p.deaths).reduce((a, b) => a + b, 0);
+            data.sums.enemies.damage = data.enemies.map(p => p.damage).reduce((a, b) => a + b, 0);
+            data.sums.enemies.healing = data.enemies.map(p => p.healing).reduce((a, b) => a + b, 0);
+            data.sums.enemies.mitigated = data.enemies.map(p => p.mitigated).reduce((a, b) => a + b, 0);
+
             drawLabel(`${data.sums.allies.eliminations}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.elims.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.allies.assists = data.allies.map(p => p.assists).reduce((a, b) => a + b, 0);
+            }, data.sums.allies.eliminations > data.sums.enemies.eliminations ? GREEN : RED)
             drawLabel(`${data.sums.allies.assists}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.allies.deaths = data.allies.map(p => p.deaths).reduce((a, b) => a + b, 0);
+            },data.sums.allies.assists > data.sums.enemies.assists ? GREEN : RED)
             drawLabel(`${data.sums.allies.deaths}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.allies.damage = data.allies.map(p => p.damage).reduce((a, b) => a + b, 0);
+            },data.sums.allies.deaths < data.sums.enemies.deaths ? GREEN : RED)
             drawLabel(`${data.sums.allies.damage}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.damage.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.allies.healing = data.allies.map(p => p.healing).reduce((a, b) => a + b, 0);
+            },data.sums.allies.damage > data.sums.enemies.damage ? GREEN : RED)
             drawLabel(`${data.sums.allies.healing}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.healing.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.allies.mitigated = data.allies.map(p => p.mitigated).reduce((a, b) => a + b, 0);
+            },data.sums.allies.healing > data.sums.enemies.healing ? GREEN : RED)
             drawLabel(`${data.sums.allies.mitigated}`, {
                 from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.allies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.mitigated.w, Coordinates.scoreboard.rowHeight]
-            })
+            },data.sums.allies.mitigated > data.sums.enemies.mitigated ? GREEN : RED)
 
-            data.sums.enemies.eliminations = data.enemies.map(p => p.eliminations).reduce((a, b) => a + b, 0);
+
             drawLabel(`${data.sums.enemies.eliminations}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.elims.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.enemies.assists = data.enemies.map(p => p.assists).reduce((a, b) => a + b, 0);
+            },data.sums.enemies.eliminations > data.sums.allies.eliminations ? GREEN : RED)
             drawLabel(`${data.sums.enemies.assists}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.enemies.deaths = data.enemies.map(p => p.deaths).reduce((a, b) => a + b, 0);
+            },data.sums.enemies.assists > data.sums.allies.assists ? GREEN : RED)
             drawLabel(`${data.sums.enemies.deaths}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.enemies.damage = data.enemies.map(p => p.damage).reduce((a, b) => a + b, 0);
+            },data.sums.enemies.deaths < data.sums.allies.deaths ? GREEN : RED)
             drawLabel(`${data.sums.enemies.damage}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.damage.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.enemies.healing = data.enemies.map(p => p.healing).reduce((a, b) => a + b, 0);
+            },data.sums.enemies.damage > data.sums.allies.damage ? GREEN : RED)
             drawLabel(`${data.sums.enemies.healing}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.healing.w, Coordinates.scoreboard.rowHeight]
-            })
-            data.sums.enemies.mitigated = data.enemies.map(p => p.mitigated).reduce((a, b) => a + b, 0);
+            },data.sums.enemies.healing > data.sums.allies.healing ? GREEN : RED)
             drawLabel(`${data.sums.enemies.mitigated}`, {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.mitigated.w, Coordinates.scoreboard.rowHeight]
-            })
+            },data.sums.enemies.mitigated > data.sums.allies.mitigated ? GREEN : RED)
         })
         .then(() => {
 
