@@ -67,7 +67,8 @@ const DEFAULT_DATA: GameData = {
     self: {
         name: '',
         hero: '',
-        heroes: []
+        heroes: [],
+        stats: []
     },
     match: {
         info: '',
@@ -367,6 +368,40 @@ function updatePreview() {
             }
         }))
 
+    {
+        for (let i = 0; i < 7; i++) {
+            if (drawOutlines) {
+                ctx.strokeRect(Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i,
+                    Coordinates.self.stats.size[0], Coordinates.self.stats.height)
+            }
+            if (i >= data.self.stats.length - 1) {
+                data.self.stats.push({});
+            }
+            ocrPromises.push(ocr0(canvas, jmp, Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i,
+                Coordinates.self.stats.size[0], Coordinates.self.stats.height, 'self-stats-' + i)
+                .then(res => {
+                    if (res.confidence > MIN_CONFIDENCE) {
+                        try {
+                            data.self.stats[i].text = cleanupText(res.text);
+                            const split = res.text.split(/([\do]+)([%]?)(.*)/);
+                            console.log(split);
+                            data.self.stats[i].value = parseNumber(split[1]);
+                            data.self.stats[i].unit = split[2];
+                            data.self.stats[i].title = cleanupText(split[split.length - 1].replace(',', '').replace('.', ''));
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    }
+                    if (drawLabels) {
+                        drawLabel(`${data.self.stats[i].value} ${data.self.stats[i].title}`, {
+                            from: [Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i],
+                            size: [Coordinates.self.stats.size[0], Coordinates.self.stats.height]
+                        })
+                    }
+                }))
+        }
+    }
+
     if (drawOutlines) {
         ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
             Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
@@ -374,17 +409,21 @@ function updatePreview() {
     ocrPromises.push(ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
-                const prevMap = data.match.map;
+                try {
+                    const prevMap = data.match.map;
 
-                data.match.info = cleanupText(res.text);
-                const mapSplit = data.match.info.split("|");
-                const modeSplit = mapSplit[0].split("-");
-                data.match.mode = cleanupText(modeSplit[0]);
-                data.match.map = cleanupText(mapSplit[1]);
-                data.match.competitive = mapSplit[0].toUpperCase().includes("COMPETITIVE");
+                    data.match.info = cleanupText(res.text);
+                    const mapSplit = data.match.info.split("|");
+                    const modeSplit = mapSplit[0].split("-");
+                    data.match.mode = cleanupText(modeSplit[0]);
+                    data.match.map = cleanupText(mapSplit[1]);
+                    data.match.competitive = mapSplit[0].toUpperCase().includes("COMPETITIVE");
 
-                if (data.match.map != prevMap) {
-                    // resetData();
+                    if (prevMap && prevMap.length > 0 && data.match.map != prevMap) {
+                        resetData();
+                    }
+                } catch (e) {
+                    console.log(e);
                 }
             }
             if (drawLabels) {
@@ -411,17 +450,21 @@ function updatePreview() {
     ocrPromises.push(ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
-                data.match.time.text = cleanupText(res.text);
-                const split = data.match.time.text.split(':');
-                let time = 0;
-                time += parseNumber(split[0]) * 60;
-                time += parseNumber(split[1]);
+                try {
+                    data.match.time.text = cleanupText(res.text);
+                    const split = data.match.time.text.split(':');
+                    let time = 0;
+                    time += parseNumber(split[0]) * 60;
+                    time += parseNumber(split[1]);
 
-                const prevDuration = data.match.time.duration;
-                data.match.time.duration = time;
+                    const prevDuration = data.match.time.duration;
+                    data.match.time.duration = time;
 
-                if (data.match.time.duration > prevDuration) {
-                    // resetData();
+                    if (data.match.time.duration > prevDuration) {
+                        // resetData();
+                    }
+                } catch (e) {
+                    console.log(e)
                 }
             }
             if (drawLabels) {

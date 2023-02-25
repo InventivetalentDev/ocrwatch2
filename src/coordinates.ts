@@ -83,6 +83,11 @@ export class Coordinates {
         hero: <Rect>{
             from: [1190, 350],
             size: [280, 60]
+        },
+        stats: <Rect>{
+            from: [1195, 410],
+            size: [370, 200],
+            height: 62
         }
     }
     static match = {

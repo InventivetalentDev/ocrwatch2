@@ -34,6 +34,13 @@ export interface PlayerData {
     mitigated: number
 }
 
+export interface SelfStat {
+    text: string
+    title: string
+    value: number
+    unit: string;
+}
+
 export interface GameData {
     times: {
         start: Date,
@@ -43,7 +50,8 @@ export interface GameData {
     self: {
         name: string,
         hero: string,
-        heroes: string[]
+        heroes: string[],
+        stats: SelfStat[]
     },
     match: {
         info: string,
