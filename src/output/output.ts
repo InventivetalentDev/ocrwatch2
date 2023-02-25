@@ -17,7 +17,7 @@ export class JsonOutput extends Output {
 
     write(data: GameData) {
         console.log(data)
-        const name = data.status + "-" + data.times.start.toISOString().replace(/:/g, '-');
+        const name = data.times.start.toISOString().replace(/:/g, '-') + "-" + data.status;
         const out = `./output/games/game-${name}.json`;
         console.log(out);
         JsonOutput.writeJson(`./output/games/game-${name}.json`, data);

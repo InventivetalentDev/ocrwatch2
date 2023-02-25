@@ -95,7 +95,10 @@ try {
     data = JsonOutput.readJson("currentgame.json")
     data.times.start = new Date(data.times.start);
     data.times.end = new Date(data.times.end);
-    updateDataDebug()
+    if (data.status !== 'in_progress') {
+        resetData();
+    }
+    updateDataDebug();
 } catch (e) {
     console.log(e)
 }
@@ -582,6 +585,7 @@ function updatePreview() {
 
 function writeOutputAndReset() {
     data.times.end = new Date();
+    JsonOutput.writeJson("currentgame.json", data);
     for (const out of outputs) {
         try {
             out.write(data);

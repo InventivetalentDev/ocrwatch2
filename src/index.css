@@ -55,7 +55,7 @@ button {
 }
 button:disabled {
     cursor: wait;
-    background-color: gray;
+    background-color: gray !important;
 }
 
 #winButton {
