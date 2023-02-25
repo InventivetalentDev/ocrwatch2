@@ -52,6 +52,18 @@ export class Coordinates {
             deaths: <Offset>{
                 x: 490,
                 w: 50
+            },
+            damage: <Offset>{
+                x: 600,
+                w: 50
+            },
+            healing: <Offset>{
+                x: 700,
+                w: 50
+            },
+            mitigated: <Offset>{
+                x: 800,
+                w: 50
             }
         },
         nameOffsetAlly: 145,

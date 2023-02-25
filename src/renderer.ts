@@ -423,6 +423,19 @@ function updatePreview() {
                     data.allies[i].eliminations = parseNumber(split[0]);
                     data.allies[i].assists = parseNumber(split[1]);
                     data.allies[i].deaths = parseNumber(split[2]);
+
+                    drawLabel(`${data.allies[i].eliminations}`,{
+                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.elims.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.allies[i].assists}`,{
+                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.assists.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.allies[i].deaths}`,{
+                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.deaths.w,Coordinates.scoreboard.rowHeight]
+                    })
                 }
             }))
             ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i + '-secondary').then(res => {
@@ -432,6 +445,19 @@ function updatePreview() {
                     data.allies[i].damage = parseNumber(split[0]);
                     data.allies[i].healing = parseNumber(split[1]);
                     data.allies[i].mitigated = parseNumber(split[2]);
+
+                    drawLabel(`${data.allies[i].damage}`,{
+                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.damage.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.allies[i].healing}`,{
+                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.healing.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.allies[i].mitigated}`,{
+                        from: [Coordinates.scoreboard.allies.from[0]+Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.allies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.mitigated.w,Coordinates.scoreboard.rowHeight]
+                    })
                 }
             }))
 
@@ -489,6 +515,19 @@ function updatePreview() {
                     data.enemies[i].eliminations = parseNumber(split[0]);
                     data.enemies[i].assists = parseNumber(split[1]);
                     data.enemies[i].deaths = parseNumber(split[2]);
+
+                    drawLabel(`${data.enemies[i].eliminations}`,{
+                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.elims.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.enemies[i].assists}`,{
+                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.assists.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.enemies[i].deaths}`,{
+                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.deaths.w,Coordinates.scoreboard.rowHeight]
+                    })
                 }
             }))
             ocrPromises.push(ocr(canvas, stats2, null, 'enemies-' + i + '-secondary').then(res => {
@@ -498,6 +537,19 @@ function updatePreview() {
                     data.enemies[i].damage = parseNumber(split[0]);
                     data.enemies[i].healing = parseNumber(split[1]);
                     data.enemies[i].mitigated = parseNumber(split[2]);
+
+                    drawLabel(`${data.enemies[i].damage}`,{
+                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.damage.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.damage.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.enemies[i].healing}`,{
+                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.healing.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.healing.w,Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.enemies[i].mitigated}`,{
+                        from: [Coordinates.scoreboard.enemies.from[0]+Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.enemies.from[1]+Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.mitigated.w,Coordinates.scoreboard.rowHeight]
+                    })
                 }
             }))
 
