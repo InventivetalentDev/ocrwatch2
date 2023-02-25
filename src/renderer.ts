@@ -1,12 +1,12 @@
 import './index.css';
 
-import {desktopCapturer, ipcRenderer} from 'electron';
+import {ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
-import {createWorker, RecognizeOptions, Worker} from "tesseract.js";
+import {createWorker, PSM, RecognizeOptions, Worker} from "tesseract.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import Jimp from "jimp/es";
-import {GameData, OcrRequest, OcrResult, Offset, PlayerData, Rect} from "./types";
+import {GameData, OcrRequest, OcrResult, PlayerData, Rect} from "./types";
 import {JobQueue} from "jobqu";
 import {CSVOutput, JsonOutput, TSVOutput} from "./output/output";
 import deepmerge from "deepmerge";
@@ -118,6 +118,7 @@ try {
 }
 
 function resetData() {
+    console.log("reset!")
     data = deepmerge({}, DEFAULT_DATA);
     data.times.start = new Date();
     data.times.end = new Date();
@@ -392,7 +393,7 @@ function updatePreview() {
                             console.log(e);
                         }
                     }
-                    if (drawLabels) {
+                    if (drawLabels && data.self.stats[i]) {
                         drawLabel(`${data.self.stats[i].value} ${data.self.stats[i].title}`, {
                             from: [Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i],
                             size: [Coordinates.self.stats.size[0], Coordinates.self.stats.height]
@@ -819,6 +820,7 @@ for (let i = 0; i < workers; i++) {
         workerPool[i] = worker;
         await worker.loadLanguage('eng');
         await worker.initialize('eng');
+        await worker.setParameters({})
     })();
 }
 
