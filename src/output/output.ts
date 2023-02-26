@@ -113,3 +113,12 @@ export class CSVOutput extends RowOutput {
     }
 
 }
+
+
+export class Influx1Output extends Output {
+
+    writeGame(data: GameData) {
+        super.writeGame(data);
+    }
+
+}

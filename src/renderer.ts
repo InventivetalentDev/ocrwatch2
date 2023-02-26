@@ -78,7 +78,17 @@ const DEFAULT_DATA: GameData = {
             duration: 0
         },
         status: {
-            text: ""
+            text: "",
+            lines: [],
+            state: '',
+            allies: {
+                time: '',
+                distance: ''
+            },
+            enemies: {
+                time: '',
+                distance: ''
+            }
         }
     },
     performance: {},
@@ -357,8 +367,8 @@ function updatePreview() {
         debugImage('nameplate', nameplate);
         ocrPromises.push(ocr(canvas, nameplate, null, 'self-name')
             .then(res => {
-                if (res.confidence > MIN_CONFIDENCE) {
-                    data.self.name = cleanupText(res.text)
+                if (res.confidence > MIN_CONFIDENCE || !data.self.name) {
+                    data.self.name = cleanupText(res.text);
                 }
                 if (drawLabels) {
                     drawLabel(data.self.name, Coordinates.self.name);
@@ -378,7 +388,7 @@ function updatePreview() {
     }
     ocrPromises.push(ocr(canvas, heroName, null, 'self-hero', 'chars')
         .then(res => {
-            if (res.confidence > MIN_CONFIDENCE) {
+            if (res.confidence > MIN_CONFIDENCE || !data.self.hero) {
                 data.self.hero = cleanupText(res.text)
                 if (data.self.heroes.indexOf(data.self.hero) < 0) {
                     data.self.heroes.push(data.self.hero);
@@ -465,7 +475,18 @@ function updatePreview() {
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 try {
+                    data.match.status.type = data.match.mode;
                     data.match.status.text = res.text;
+                    const lines = data.match.status.text.split("\n");
+                    data.match.status.lines = lines;
+
+                    switch (data.match.status.type) {
+                        case 'PAYLOAD': {
+                            const timeSplit = lines[0].split(' ');
+                            break;
+                        }
+                    }
+
                     //TODO
                 } catch (e) {
                     console.log(e);
@@ -787,8 +808,10 @@ function updatePreview() {
 function writeOutputAndReset() {
     data.times.end = new Date();
     JsonOutput.writeJson("currentgame.json", data);
-    session.states.push(data.status);
-    JsonOutput.writeJson("session.json", session);
+    if (data.status !== 'reset' && data.status !== 'in_progress') {
+        session.states.push(data.status);
+        JsonOutput.writeJson("session.json", session);
+    }
     for (const out of outputs) {
         try {
             out.writeGame(data);

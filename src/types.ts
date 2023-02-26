@@ -64,7 +64,9 @@ export interface GameData {
             duration: number
         },
         status: {
-            text: string
+            type: string,
+            text: string,
+            lines: string[]
         }
     },
     performance: any,
