@@ -76,6 +76,9 @@ const DEFAULT_DATA: GameData = {
         time: {
             text: '0:00',
             duration: 0
+        },
+        status: {
+            text: ""
         }
     },
     performance: {},
@@ -123,7 +126,7 @@ function resetData() {
 }
 
 let session = {
-    states:[]
+    states: []
 }
 
 try {
@@ -451,6 +454,25 @@ function updatePreview() {
             }
             if (drawLabels) {
                 drawLabel(data.match.mode + " " + (data.match.competitive ? "(COMP)" : "") + " " + data.match.map, Coordinates.match.wrapper);
+            }
+        }))
+
+    if (drawOutlines) {
+        ctx.strokeRect(Coordinates.match.status.from[0], Coordinates.match.status.from[1],
+            Coordinates.match.status.size[0], Coordinates.match.status.size[1])
+    }
+    ocrPromises.push(ocr(canvas, contrast, Coordinates.match.status as Rect, 'match-status')
+        .then(res => {
+            if (res.confidence > MIN_CONFIDENCE) {
+                try {
+                    data.match.status.text = res.text;
+                    //TODO
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+            if (drawLabels) {
+                //TODO
             }
         }))
 
@@ -792,7 +814,7 @@ function writeOutputAndReset() {
 
 function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
-    document.getElementById('gameStates').textContent = session.states.map(s=>s.substring(0,1).toUpperCase()).join('')
+    document.getElementById('gameStates').textContent = session.states.map(s => s.substring(0, 1).toUpperCase()).join('')
 }
 
 const winButton = document.getElementById('winButton') as HTMLButtonElement;
