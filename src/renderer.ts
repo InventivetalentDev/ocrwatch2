@@ -358,7 +358,7 @@ function updatePreview() {
         ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
             Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
     }
-    ocrPromises.push(ocr(canvas, heroName, null, 'self-hero','chars')
+    ocrPromises.push(ocr(canvas, heroName, null, 'self-hero', 'chars')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 data.self.hero = cleanupText(res.text)
@@ -809,17 +809,23 @@ resetButton.addEventListener('click', () => {
     }, 1000);
 })
 
-const workers = 16;
-const workerPool: {[type: string]:Worker[]} = {
+const workers: { [key: string]: number } = {
+    default: 16,
+    chars: 2
+};
+const workerPool: { [type: string]: Worker[] } = {
     default: [],
     chars: []
 };
-let workerIndex = 0;
+const workerIndex: { [key: string]: number } = {
+    default: 0,
+    chars: 0
+}
 const workerBusys: Map<string, boolean> = new Map<string, boolean>();
 const ocrQueue: JobQueue<OcrRequest, OcrResult> = new JobQueue<OcrRequest, OcrResult>(request => _ocr1(request), 200, 2)
 
-for (const type of ['default','chars']) {
-    for (let i = 0; i < workers; i++) {
+for (const type of ['default', 'chars']) {
+    for (let i = 0; i < workers[type]; i++) {
         (async () => {
             const worker = await createWorker({
                 logger: m => console.debug(m),
@@ -859,16 +865,16 @@ async function _ocr1(request: OcrRequest): Promise<OcrResult> {
     return _ocr(null, request.jmp, request.rect, request.id, request.mode);
 }
 
-async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string, mode  = 'default'): Promise<OcrResult> {
+async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string, mode = 'default'): Promise<OcrResult> {
     if (workerBusys.get(id)) {
         return;
     }
     workerBusys.set(id, true);
 
     // const recognized = await Tesseract.recognize(canvas);
-    const worker = workerPool[mode][workerIndex++];
-    if (workerIndex >= workers) {
-        workerIndex = 0;
+    const worker = workerPool[mode][workerIndex[mode]++];
+    if (workerIndex[mode] >= workers[mode]) {
+        workerIndex[mode] = 0;
     }
     let recognized;
     try {
