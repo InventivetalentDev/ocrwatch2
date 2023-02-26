@@ -33,12 +33,12 @@ export class JsonOutput extends Output {
         fs.writeFileSync(out2, Buffer.from(canvas.substring('data:image/png;base64,'.length), 'base64'))
     }
 
-    static readJson(file: string): GameData {
+    static readJson<T>(file: string): T {
         const str = fs.readFileSync(file, 'utf-8');
-        return JSON.parse(str) as GameData;
+        return JSON.parse(str) as T;
     }
 
-    static writeJson(file: string, data: GameData) {
+    static writeJson(file: string, data: any) {
         try {
             fs.writeFileSync(file, JSON.stringify(data, null, 2), {
                 encoding: 'utf-8',
@@ -71,7 +71,7 @@ export class RowOutput extends Output {
             data.times.start.toISOString(),
             data.status,
             data.self.name,
-            data.self.heroes.join(','),
+            data.self.heroes.join('+'),
             data.match.mode,
             data.match.map,
             data.match.competitive,

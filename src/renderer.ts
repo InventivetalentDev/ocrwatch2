@@ -122,6 +122,18 @@ function resetData() {
     data.times.end = new Date();
 }
 
+let session = {
+    states:[]
+}
+
+try {
+    session = JsonOutput.readJson("session.json")
+    updateDataDebug();
+} catch (e) {
+    console.log(e)
+}
+
+
 const outputs = [
     new JsonOutput(),
     new TSVOutput(),
@@ -753,6 +765,8 @@ function updatePreview() {
 function writeOutputAndReset() {
     data.times.end = new Date();
     JsonOutput.writeJson("currentgame.json", data);
+    session.states.push(data.status);
+    JsonOutput.writeJson("session.json", session);
     for (const out of outputs) {
         try {
             out.writeGame(data);
@@ -778,6 +792,7 @@ function writeOutputAndReset() {
 
 function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
+    document.getElementById('gameStates').textContent = session.states.map(s=>s.substring(0,1).toUpperCase()).join('')
 }
 
 const winButton = document.getElementById('winButton') as HTMLButtonElement;
