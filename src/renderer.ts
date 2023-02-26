@@ -2,7 +2,7 @@ import './index.css';
 
 import {ipcRenderer} from 'electron';
 import {Coordinates} from "./coordinates";
-import {createWorker, PSM, RecognizeOptions, Worker} from "tesseract.js";
+import {createWorker, PSM, RecognizeOptions, Worker, WorkerParams} from "tesseract.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import Jimp from "jimp/es";
@@ -13,7 +13,7 @@ import deepmerge from "deepmerge";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
-const MIN_CONFIDENCE = 75
+const MIN_CONFIDENCE = 70
 
 setTimeout(() => {
     ipcRenderer.send('initVideo');
@@ -166,6 +166,7 @@ async function takeScreenshot() {
     const img = await takeVideoSnapshot();
 
     screenshotStatus.textContent = "Processing...";
+    canvas.classList.add('processing');
 
     let jmp;
     if ((document.getElementById('testImg') as HTMLInputElement).checked) {
@@ -292,6 +293,7 @@ function updatePreview() {
     ctx.drawImage(img, 0, 0);
 
     screenshotStatus.textContent = "Running OCR...";
+    canvas.classList.add('ocring');
 
 
     const drawOutlines = true;
@@ -356,7 +358,7 @@ function updatePreview() {
         ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
             Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
     }
-    ocrPromises.push(ocr(canvas, heroName, null, 'self-hero')
+    ocrPromises.push(ocr(canvas, heroName, null, 'self-hero','chars')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 data.self.hero = cleanupText(res.text)
@@ -383,7 +385,7 @@ function updatePreview() {
                 .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
                         try {
-                            data.self.stats[i].text = cleanupText(res.text);
+                            data.self.stats[i].text = res.text;
                             const split = res.text.split(/([\do]+)([%]?)(.*)/);
                             console.log(split);
                             data.self.stats[i].value = parseNumber(split[1]);
@@ -731,6 +733,7 @@ function updatePreview() {
             updateDataDebug();
 
             screenshotStatus.textContent = "Ready"
+            canvas.classList.remove('ocring')
 
             JsonOutput.writeJson("currentgame.json", data);
 
@@ -807,21 +810,30 @@ resetButton.addEventListener('click', () => {
 })
 
 const workers = 16;
-const workerPool: Worker[] = [];
+const workerPool: {[type: string]:Worker[]} = {
+    default: [],
+    chars: []
+};
 let workerIndex = 0;
 const workerBusys: Map<string, boolean> = new Map<string, boolean>();
 const ocrQueue: JobQueue<OcrRequest, OcrResult> = new JobQueue<OcrRequest, OcrResult>(request => _ocr1(request), 200, 2)
 
-for (let i = 0; i < workers; i++) {
-    (async () => {
-        const worker = await createWorker({
-            logger: m => console.debug(m),
-        });
-        workerPool[i] = worker;
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
-        await worker.setParameters({})
-    })();
+for (const type of ['default','chars']) {
+    for (let i = 0; i < workers; i++) {
+        (async () => {
+            const worker = await createWorker({
+                logger: m => console.debug(m),
+            });
+            workerPool[type][i] = worker;
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            const params: Partial<WorkerParams> = {};
+            if (type === 'chars') {
+                params.tessedit_pageseg_mode = PSM.SINGLE_CHAR
+            }
+            await worker.setParameters({});
+        })();
+    }
 }
 
 async function ocr0(canvas: HTMLCanvasElement, jmp: Jimp, x: number, y: number, w: number, h: number, id: string) {
@@ -833,27 +845,28 @@ async function ocr1(request: OcrRequest): Promise<OcrResult> {
 }
 
 
-async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string): Promise<OcrResult> {
+async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string, mode = 'default'): Promise<OcrResult> {
     updateTextDebug(id, "....", 0, true);
     return ocrQueue.add({
-        jmp: jmp,
-        rect: rect,
-        id: id
+        jmp,
+        rect,
+        id,
+        mode
     })
 }
 
 async function _ocr1(request: OcrRequest): Promise<OcrResult> {
-    return _ocr(null, request.jmp, request.rect, request.id);
+    return _ocr(null, request.jmp, request.rect, request.id, request.mode);
 }
 
-async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string): Promise<OcrResult> {
+async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string, mode  = 'default'): Promise<OcrResult> {
     if (workerBusys.get(id)) {
         return;
     }
     workerBusys.set(id, true);
 
     // const recognized = await Tesseract.recognize(canvas);
-    const worker = workerPool[workerIndex++];
+    const worker = workerPool[mode][workerIndex++];
     if (workerIndex >= workers) {
         workerIndex = 0;
     }
@@ -994,6 +1007,9 @@ async function handleImageContent(imageType: string, jimp: Jimp) {
 
     // wait for new image content to load before re-drawing
     if (imageType === 'masked') {
+        canvas.classList.remove('processing');
+
+
         setTimeout(() => {
             updatePreview();
         }, 200);

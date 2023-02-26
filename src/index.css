@@ -21,6 +21,10 @@ div:not(:has(>div)) {
 canvas {
     cursor: crosshair;
 }
+canvas.processing {
+}
+canvas.ocring {
+}
 
 .img-debug {
     max-width: 30vw;

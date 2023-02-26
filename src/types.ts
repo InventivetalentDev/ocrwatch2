@@ -16,6 +16,7 @@ export interface OcrRequest {
     id: string;
     rect: Rect | null;
     jmp: Jimp;
+    mode: string;
 }
 
 export interface OcrResult {

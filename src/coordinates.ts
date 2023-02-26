@@ -98,6 +98,10 @@ export class Coordinates {
         time: <Rect>{
             from: [188, 60],
             size: [100, 35]
+        },
+        status: <Rect>{
+            from:[522,13],
+            size: [850,76]
         }
     }
     static performance = {
