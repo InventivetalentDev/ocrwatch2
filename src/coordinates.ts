@@ -100,8 +100,8 @@ export class Coordinates {
             size: [100, 35]
         },
         status: <Rect>{
-            from:[600,13],
-            size: [830,76]
+            from:[680,28],
+            size: [520,100]
         }
     }
     static performance = {

@@ -105,13 +105,7 @@ for (let i = 0; i < 5; i++) {
     DEFAULT_DATA.enemies.push(deepmerge({}, DEFAULT_PLAYER));
 }
 
-const RANKS = [];
-const RANK_NAMES = ["bronze", "silver", "gold", "platinum", "diamond", "master", "grandmaster"];
-for (const name of RANK_NAMES) {
-    for (let i = 1; i <= 5; i++) {
-        RANKS.push(name + "" + i);
-    }
-}
+
 
 let data = deepmerge({}, DEFAULT_DATA);
 
@@ -136,8 +130,39 @@ function resetData() {
 }
 
 let session = {
-    states: []
+    states: [],
+    rank:"",
+    accounts: {}
 }
+
+function restoreSession(account: string) {
+    if (!session.accounts || !session.accounts.hasOwnProperty(account)) {
+        return;
+    }
+    const acc = session.accounts[account];
+    if (acc.rank) {
+        (document.getElementById('rankSelect') as HTMLSelectElement).value = acc.rank;
+    }
+}
+
+const RANKS = [];
+const RANK_NAMES = ["bronze", "silver", "gold", "platinum", "diamond", "master", "grandmaster"];
+for (const name of RANK_NAMES) {
+    for (let i = 1; i <= 5; i++) {
+        const rank = name + "" + i;
+        RANKS.push(rank);
+        const opt = document.createElement('option');
+        opt.value = rank;
+        opt.text = rank;
+        document.getElementById('rankSelect').appendChild(opt);
+    }
+}
+document.getElementById('rankSelect').addEventListener('change',()=>{
+    if (session.lastAccount && session.accounts && session.accounts.hasOwnProperty(session.lastAccount)) {
+        session.accounts[session.lastAccount].rank = (document.getElementById('rankSelect') as HTMLSelectElement).value;
+        saveSession()
+    }
+})
 
 try {
     session = JsonOutput.readJson("session.json")
@@ -193,7 +218,7 @@ async function takeScreenshot() {
 
     let jmp;
     if ((document.getElementById('testImg') as HTMLInputElement).checked) {
-        jmp = await Jimp.read("https://i.imgur.com/SQeVL8V.png")
+        jmp = await Jimp.read("https://i.imgur.com/2FYO8af.png")
     } else {
         jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
     }
@@ -367,11 +392,28 @@ function updatePreview() {
         debugImage('nameplate', nameplate);
         ocrPromises.push(ocr(canvas, nameplate, null, 'self-name')
             .then(res => {
-                if (res.confidence > MIN_CONFIDENCE || !data.self.name) {
-                    data.self.name = cleanupText(res.text);
+                try {
+                    if (res.confidence > MIN_CONFIDENCE || !data.self.name) {
+                        data.self.name = cleanupText(res.text);
+                    }
+                    if (drawLabels) {
+                        drawLabel(data.self.name, Coordinates.self.name);
+                    }
+                }catch (e){
+                    console.log(e);
                 }
-                if (drawLabels) {
-                    drawLabel(data.self.name, Coordinates.self.name);
+                try{
+                    session.lastAccount = data.self.name;
+                    if (!session.accounts) {
+                        session.accounts = {};
+                    }
+                    if (!session.accounts.hasOwnProperty(session.lastAccount)) {
+                        session.accounts[session.lastAccount] = {};
+                    }
+
+                    restoreSession(data.self.name);
+                }catch (e){
+                    console.log(e);
                 }
             }))
     }
@@ -471,9 +513,23 @@ function updatePreview() {
         ctx.strokeRect(Coordinates.match.status.from[0], Coordinates.match.status.from[1],
             Coordinates.match.status.size[0], Coordinates.match.status.size[1])
     }
-    ocrPromises.push(ocr(canvas, contrast, Coordinates.match.status as Rect, 'match-status')
+    const matchStatus = resized.clone()
+        .crop(Coordinates.match.status.from[0], Coordinates.match.status.from[1], Coordinates.match.status.size[0], Coordinates.match.status.size[1])
+        // .color([
+        //     {apply:"red",params:[-50]},
+        //     {apply:"saturate",params:[40]},
+        //     {apply:"brighten",params:[50]}
+        // ])
+        .invert()
+        .grayscale()
+        .contrast(0.1)
+        // .scale(1.1)
+        // .threshold({max:140})
+    debugImage('match-status', matchStatus);
+    document.getElementById('imgDebug').append(document.createElement('br'));
+    ocrPromises.push(ocr(canvas, matchStatus, null, 'match-status')
         .then(res => {
-            if (res.confidence > MIN_CONFIDENCE) {
+            if (res.confidence > 60) {
                 try {
                     data.match.status.type = data.match.mode;
                     data.match.status.text = res.text;
@@ -805,12 +861,23 @@ function updatePreview() {
 
 }
 
+function saveSession() {
+    JsonOutput.writeJson("session.json", session);
+}
+
 function writeOutputAndReset() {
     data.times.end = new Date();
     JsonOutput.writeJson("currentgame.json", data);
-    if (data.status !== 'reset' && data.status !== 'in_progress') {
-        session.states.push(data.status);
-        JsonOutput.writeJson("session.json", session);
+    try{
+        if (data.status !== 'reset' && data.status !== 'in_progress') {
+            session.states.push(data.status);
+            if (session.accounts && session.accounts.hasOwnProperty(session.lastAccount)) {
+                session.accounts[session.lastAccounts].states.push(data.status);
+            }
+            saveSession();
+        }
+    }catch (e){
+        console.log(e);
     }
     for (const out of outputs) {
         try {
