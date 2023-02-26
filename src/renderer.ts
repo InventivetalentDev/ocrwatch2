@@ -231,6 +231,12 @@ async function processScreenshot(jmp: Jimp) {
 
     ///////////
 
+    canvas.classList.remove('processing');
+
+    setTimeout(() => {
+        updatePreview();
+    }, 200);
+
     // const alliesListImg = await contrast.clone()
     //     .crop(Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1],
     //         Coordinates.scoreboard.allies.size[0], Coordinates.scoreboard.allies.size[1]);
@@ -282,7 +288,6 @@ function updatePreview() {
     ocrRunning = true;
 
     const img = document.getElementById('img-' + imageSelect.value) as HTMLImageElement;
-    const jmp = images.get(imageSelect.value);
     const resized = images.get('resized');
     const contrast = images.get('contrast');
 
@@ -330,7 +335,7 @@ function updatePreview() {
             ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
                 Coordinates.self.name.size[0], Coordinates.self.name.size[1])
         }
-        const nameplate = jmp.clone()
+        const nameplate = contrast.clone()
             .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
             .rotate(-4.5)
             .crop(0, 19, 200, 25)
@@ -347,7 +352,7 @@ function updatePreview() {
             }))
     }
 
-    const heroName = jmp.clone()
+    const heroName = contrast.clone()
         .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
         .contrast(0.1)
         .scale(0.5)
@@ -384,7 +389,7 @@ function updatePreview() {
                     unit: ""
                 });
             }
-            ocrPromises.push(ocr0(canvas, jmp, Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i,
+            ocrPromises.push(ocr0(canvas, contrast, Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i,
                 Coordinates.self.stats.size[0], Coordinates.self.stats.height, 'self-stats-' + i)
                 .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
@@ -413,7 +418,7 @@ function updatePreview() {
         ctx.strokeRect(Coordinates.match.wrapper.from[0], Coordinates.match.wrapper.from[1],
             Coordinates.match.wrapper.size[0], Coordinates.match.wrapper.size[1])
     }
-    ocrPromises.push(ocr(canvas, jmp, Coordinates.match.wrapper as Rect, 'match-info')
+    ocrPromises.push(ocr(canvas, contrast, Coordinates.match.wrapper as Rect, 'match-info')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 try {
@@ -442,7 +447,7 @@ function updatePreview() {
         ctx.strokeRect(Coordinates.performance.wrapper.from[0], Coordinates.performance.wrapper.from[1],
             Coordinates.performance.wrapper.size[0], Coordinates.performance.wrapper.size[1])
     }
-    ocrPromises.push(ocr(canvas, jmp, Coordinates.performance.wrapper as Rect, 'performance')
+    ocrPromises.push(ocr(canvas, contrast, Coordinates.performance.wrapper as Rect, 'performance')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 data.performance.text = cleanupText(res.text);
@@ -454,7 +459,7 @@ function updatePreview() {
         ctx.strokeRect(Coordinates.match.time.from[0], Coordinates.match.time.from[1],
             Coordinates.match.time.size[0], Coordinates.match.time.size[1])
     }
-    ocrPromises.push(ocr(canvas, jmp, Coordinates.match.time as Rect, 'match-time')
+    ocrPromises.push(ocr(canvas, contrast, Coordinates.match.time as Rect, 'match-time')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 try {
@@ -877,15 +882,5 @@ async function handleImageContent(imageType: string, jimp: Jimp) {
         }
     }
     element.src = content;
-
-    // wait for new image content to load before re-drawing
-    if (imageType === 'masked') {
-        canvas.classList.remove('processing');
-
-
-        setTimeout(() => {
-            updatePreview();
-        }, 200);
-    }
 }
 
