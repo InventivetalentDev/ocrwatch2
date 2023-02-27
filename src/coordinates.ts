@@ -9,6 +9,10 @@ export class Coordinates {
         allies: <Rect>{
             from: [312, 193],
             size: [848, 307],
+            role: <Rect>{
+                from: [314, 193],
+                size: [28, 300]
+            },
             name: <Rect>{
                 from: [455, 193],
                 size: [166, 307]
@@ -25,6 +29,10 @@ export class Coordinates {
         enemies: <Rect>{
             from: [312, 613],
             size: [848, 307],
+            role: <Rect>{
+                from: [314, 613],
+                size: [30, 305]
+            },
             name: <Rect>{
                 from: [410, 613],
                 size: [166, 307]

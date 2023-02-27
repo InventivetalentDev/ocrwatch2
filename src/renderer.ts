@@ -219,7 +219,7 @@ async function takeScreenshot() {
 
     let jmp;
     if ((document.getElementById('testImg') as HTMLInputElement).checked) {
-        jmp = await Jimp.read("https://i.imgur.com/2FYO8af.png")
+        jmp = await Jimp.read("https://yeleha.co/NcObdsZr")
     } else {
         jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
     }
@@ -443,7 +443,7 @@ function updatePreview() {
         }))
 
     {
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < 8; i++) {
             if (drawOutlines) {
                 ctx.strokeRect(Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i,
                     Coordinates.self.stats.size[0], Coordinates.self.stats.height)
@@ -613,6 +613,12 @@ function updatePreview() {
                 ctx.stroke()
             }
 
+            const role = resized.clone().crop(Coordinates.scoreboard.allies.role.from[0], Coordinates.scoreboard.allies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight);
+            const roleClr = Jimp.intToRGBA(role.getPixelColor(5, 5))
+            data.allies[i].roleColor = roleClr;
+            data.allies[i].grouped = roleClr.g > roleClr.r && roleClr.g > roleClr.b
+
             const name = resized.clone().crop(Coordinates.scoreboard.allies.name.from[0], Coordinates.scoreboard.allies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.name.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -635,13 +641,21 @@ function updatePreview() {
                 // ])
                 .invert()
                 .threshold({max: 200})
+            debugImage('allies-' + i + '-role', role);
             debugImage('allies-' + i + '-name', name);
             debugImage('allies-' + i + '-primary', stats1);
             debugImage('allies-' + i + '-secondary', stats2);
             ocrPromises.push(ocr(canvas, name, null, 'allies-' + i + '-name', 'chars')
-                .then(res=>{
+                .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
                         data.allies[i].name = cleanupText(res.text);
+                    }
+
+                    if (drawLabels) {
+                        drawLabel(`${data.allies[i].name}`, {
+                            from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.nameAlly.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                            size: [Coordinates.scoreboard.offsets.nameAlly.w, Coordinates.scoreboard.rowHeight]
+                        });
                     }
                 }));
             ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i + '-primary')
@@ -749,9 +763,17 @@ function updatePreview() {
             debugImage('enemies-' + i + '-primary', stats1);
             debugImage('enemies-' + i + '-secondary', stats2);
             ocrPromises.push(ocr(canvas, name, null, 'enemies-' + i + '-name', 'chars')
-                .then(res=>{
+                .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
                         data.enemies[i].name = cleanupText(res.text);
+                    }
+
+
+                    if (drawLabels) {
+                        drawLabel(`${data.enemies[i].name}`, {
+                            from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.nameEnemy.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                            size: [Coordinates.scoreboard.offsets.nameEnemy.w, Coordinates.scoreboard.rowHeight]
+                        });
                     }
                 }));
             ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i + '-primary').then(res => {

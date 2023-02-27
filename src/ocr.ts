@@ -3,7 +3,7 @@ import {JobQueue} from "jobqu";
 import {OcrRequest, OcrResult, Rect} from "./types";
 import Jimp from "jimp";
 
-export const MIN_CONFIDENCE = 70;
+export const MIN_CONFIDENCE = 60;
 
 const workers: { [key: string]: number } = {
     default: 16,
