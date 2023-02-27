@@ -6,13 +6,14 @@ import * as influx2 from "@influxdata/influxdb-client"
 
 import config from "../../config.json";
 import {ClientOptions} from "@influxdata/influxdb-client";
+import {GoogleSpreadsheet} from "google-spreadsheet";
 
 export class Output {
 
-    writeGame(data: GameData): void {
+    writeGame(data: GameData): void | Promise<void> {
     }
 
-    writeImage(data: GameData, jmp: Jimp, canvas: string): void {
+    writeImage(data: GameData, jmp: Jimp, canvas: string): void | Promise<void> {
     }
 
 }
@@ -118,6 +119,35 @@ export class CSVOutput extends RowOutput {
 
 }
 
+export class GoogleSheetsOutput extends RowOutput {
+
+    private sheet: GoogleSpreadsheet;
+
+    constructor() {
+        super();
+        if(!config.outputs?.gsheets) return;
+        this.sheet = new GoogleSpreadsheet(config.outputs.gsheets.sheet);
+        this.sheet.useServiceAccountAuth({
+            private_key: config.outputs.gsheets.private_key,
+            client_email: config.outputs.gsheets.client_email
+        })
+            .then(() => {
+                return this.sheet.loadInfo()
+            })
+    }
+
+    async writeGame(data: GameData) {
+        if (!this.sheet) return
+        if(!config.outputs?.gsheets) return;
+        const sheet = this.sheet.sheetsByIndex[0]
+        if (sheet.rowCount <= 0) {
+            // await sheet.addRow(this.getHeader());
+            await sheet.setHeaderRow(this.getHeader());
+        }
+        await sheet.addRow(this.makeRow(data));
+    }
+
+}
 
 export class Influx1Output extends Output {
 

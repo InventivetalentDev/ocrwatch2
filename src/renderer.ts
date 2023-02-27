@@ -6,7 +6,7 @@ import {Coordinates} from "./coordinates";
 // @ts-ignore
 import Jimp from "jimp/es";
 import {GameData, OcrResult, PlayerData, Rect} from "./types";
-import {CSVOutput, JsonOutput, TSVOutput} from "./output/output";
+import {CSVOutput, GoogleSheetsOutput, JsonOutput, TSVOutput} from "./output/output";
 import deepmerge from "deepmerge";
 import {MIN_CONFIDENCE, ocr, ocr0} from "./ocr";
 
@@ -175,7 +175,8 @@ try {
 const outputs = [
     new JsonOutput(),
     new TSVOutput(),
-    new CSVOutput()
+    new CSVOutput(),
+    new GoogleSheetsOutput()
 ]
 
 async function createVideo(sourceId: string) {
