@@ -49,6 +49,7 @@ let stream: MediaStream;
 const DEFAULT_PLAYER: PlayerData = {
     primary: '',
     secondary: '',
+    name: '',
     eliminations: 0,
     assists: 0,
     deaths: 0,
@@ -106,7 +107,6 @@ for (let i = 0; i < 5; i++) {
 }
 
 
-
 let data = deepmerge({}, DEFAULT_DATA);
 
 
@@ -131,7 +131,7 @@ function resetData() {
 
 let session = {
     states: [],
-    rank:"",
+    rank: "",
     accounts: {}
 }
 
@@ -157,7 +157,7 @@ for (const name of RANK_NAMES) {
         document.getElementById('rankSelect').appendChild(opt);
     }
 }
-document.getElementById('rankSelect').addEventListener('change',()=>{
+document.getElementById('rankSelect').addEventListener('change', () => {
     if (session.lastAccount && session.accounts && session.accounts.hasOwnProperty(session.lastAccount)) {
         session.accounts[session.lastAccount].rank = (document.getElementById('rankSelect') as HTMLSelectElement).value;
         saveSession()
@@ -400,10 +400,10 @@ function updatePreview() {
                     if (drawLabels) {
                         drawLabel(data.self.name, Coordinates.self.name);
                     }
-                }catch (e){
+                } catch (e) {
                     console.log(e);
                 }
-                try{
+                try {
                     session.lastAccount = data.self.name;
                     if (!session.accounts) {
                         session.accounts = {};
@@ -413,7 +413,7 @@ function updatePreview() {
                     }
 
                     restoreSession(data.self.name);
-                }catch (e){
+                } catch (e) {
                     console.log(e);
                 }
             }))
@@ -524,8 +524,8 @@ function updatePreview() {
         .invert()
         .grayscale()
         .contrast(0.1)
-        // .scale(1.1)
-        // .threshold({max:140})
+    // .scale(1.1)
+    // .threshold({max:140})
     debugImage('match-status', matchStatus);
     document.getElementById('imgDebug').append(document.createElement('br'));
     ocrPromises.push(ocr(canvas, matchStatus, null, 'match-status')
@@ -613,6 +613,14 @@ function updatePreview() {
                 ctx.stroke()
             }
 
+            const name = resized.clone().crop(Coordinates.scoreboard.allies.name.from[0], Coordinates.scoreboard.allies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.allies.name.size[0], Coordinates.scoreboard.rowHeight)
+                // .color([
+                //     {apply: "xor", params: ["#127A93"]}
+                // ])
+                .invert()
+                .scale(0.7)
+                .threshold({max: 140})
             const stats1 = resized.clone().crop(Coordinates.scoreboard.allies.stats1.from[0], Coordinates.scoreboard.allies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.stats1.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -627,30 +635,38 @@ function updatePreview() {
                 // ])
                 .invert()
                 .threshold({max: 200})
+            debugImage('allies-' + i + '-name', name);
             debugImage('allies-' + i + '-primary', stats1);
             debugImage('allies-' + i + '-secondary', stats2);
-            ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i + '-primary').then(res => {
-                if (res.confidence > MIN_CONFIDENCE) {
-                    data.allies[i].primary = cleanupText(res.text)
-                    const split = data.allies[i].primary.split(' ');
-                    data.allies[i].eliminations = Math.max(parseNumber(split[0]), data.allies[i].eliminations);
-                    data.allies[i].assists = Math.max(parseNumber(split[1]), data.allies[i].assists);
-                    data.allies[i].deaths = Math.max(parseNumber(split[2]), data.allies[i].deaths);
-                }
+            ocrPromises.push(ocr(canvas, name, null, 'allies-' + i + '-name', 'chars')
+                .then(res=>{
+                    if (res.confidence > MIN_CONFIDENCE) {
+                        data.allies[i].name = cleanupText(res.text);
+                    }
+                }));
+            ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i + '-primary')
+                .then(res => {
+                    if (res.confidence > MIN_CONFIDENCE) {
+                        data.allies[i].primary = cleanupText(res.text)
+                        const split = data.allies[i].primary.split(' ');
+                        data.allies[i].eliminations = Math.max(parseNumber(split[0]), data.allies[i].eliminations);
+                        data.allies[i].assists = Math.max(parseNumber(split[1]), data.allies[i].assists);
+                        data.allies[i].deaths = Math.max(parseNumber(split[2]), data.allies[i].deaths);
+                    }
 
-                drawLabel(`${data.allies[i].eliminations}`, {
-                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
-                    size: [Coordinates.scoreboard.offsets.elims.w, Coordinates.scoreboard.rowHeight]
-                });
-                drawLabel(`${data.allies[i].assists}`, {
-                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
-                    size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
-                });
-                drawLabel(`${data.allies[i].deaths}`, {
-                    from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
-                    size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
-                })
-            }))
+                    drawLabel(`${data.allies[i].eliminations}`, {
+                        from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.elims.w, Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.allies[i].assists}`, {
+                        from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.assists.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.assists.w, Coordinates.scoreboard.rowHeight]
+                    });
+                    drawLabel(`${data.allies[i].deaths}`, {
+                        from: [Coordinates.scoreboard.allies.from[0] + Coordinates.scoreboard.offsets.deaths.x, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                        size: [Coordinates.scoreboard.offsets.deaths.w, Coordinates.scoreboard.rowHeight]
+                    })
+                }))
             ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i + '-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.allies[i].secondary = cleanupText(res.text)
@@ -707,6 +723,14 @@ function updatePreview() {
                 ctx.stroke()
             }
 
+            const name = resized.clone().crop(Coordinates.scoreboard.enemies.name.from[0], Coordinates.scoreboard.enemies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.enemies.name.size[0], Coordinates.scoreboard.rowHeight)
+                // .color([
+                //     {apply: "xor", params: ["#127A93"]}
+                // ])
+                .invert()
+                .scale(0.7)
+                .threshold({max: 180})
             const stats1 = resized.clone().crop(Coordinates.scoreboard.enemies.stats1.from[0], Coordinates.scoreboard.enemies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.stats1.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -721,8 +745,15 @@ function updatePreview() {
                 // ])
                 .invert()
                 .threshold({max: 220})
+            debugImage('enemies-' + i + '-name', name);
             debugImage('enemies-' + i + '-primary', stats1);
             debugImage('enemies-' + i + '-secondary', stats2);
+            ocrPromises.push(ocr(canvas, name, null, 'enemies-' + i + '-name', 'chars')
+                .then(res=>{
+                    if (res.confidence > MIN_CONFIDENCE) {
+                        data.enemies[i].name = cleanupText(res.text);
+                    }
+                }));
             ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i + '-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
                     data.enemies[i].primary = cleanupText(res.text)
@@ -869,7 +900,7 @@ function saveSession() {
 function writeOutputAndReset() {
     data.times.end = new Date();
     JsonOutput.writeJson("currentgame.json", data);
-    try{
+    try {
         if (data.status !== 'reset' && data.status !== 'in_progress') {
             session.states.push(data.status);
             if (session.accounts && session.accounts.hasOwnProperty(session.lastAccount)) {
@@ -877,7 +908,7 @@ function writeOutputAndReset() {
             }
             saveSession();
         }
-    }catch (e){
+    } catch (e) {
         console.log(e);
     }
     for (const out of outputs) {

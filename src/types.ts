@@ -27,6 +27,7 @@ export interface OcrResult {
 export interface PlayerData {
     primary: string
     secondary: string
+    name: string;
     eliminations: number
     assists: number
     deaths: number
