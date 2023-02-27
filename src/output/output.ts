@@ -1,7 +1,11 @@
 import {GameData} from "../types";
 import * as fs from "fs";
 import Jimp from "jimp";
+import * as influx1 from "influx";
+import * as influx2 from "@influxdata/influxdb-client"
 
+import config from "../../config.json";
+import {ClientOptions} from "@influxdata/influxdb-client";
 
 export class Output {
 
@@ -117,8 +121,54 @@ export class CSVOutput extends RowOutput {
 
 export class Influx1Output extends Output {
 
+    private influx: influx1.InfluxDB;
+
+    constructor() {
+        super();
+        if (!config || !config.outputs || !config.outputs.influx || !config.outputs.influx.enabled) return
+        const influxConfig: influx1.ISingleHostConfig & any = config.outputs.influx;
+        influxConfig.schema = [
+            {
+                measurement: config.outputs.influx.measurement || 'ocrwatch_games',
+                fields: {
+                    duration: influx1.FieldType.INTEGER
+                },
+                tags: [
+                    'account',
+                    'hero',
+                    'mode',
+                    'map',
+                    'competitive',
+                    'state'
+                ]
+            }
+        ]
+        this.influx = new influx1.InfluxDB(influxConfig);
+    }
+
     writeGame(data: GameData) {
-        super.writeGame(data);
+        if (!this.influx) return;
+        //TODO
+    }
+
+}
+
+export class Influx2Output extends Output {
+
+    private influx: influx2.InfluxDB;
+    private writeApi: influx2.WriteApi;
+
+    constructor() {
+        super();
+        if (!config || !config.outputs || !config.outputs.influx2 || !config.outputs.influx2.enabled) return
+        const influxConfig: ClientOptions & any = config.outputs.influx2;
+        this.influx = new influx2.InfluxDB(influxConfig)
+        this.writeApi = this.influx.getWriteApi(influxConfig.org, influxConfig.bucket);
+    }
+
+    writeGame(data: GameData) {
+        if (!this.influx || !this.writeApi) return;
+        //TODO
     }
 
 }

@@ -1,0 +1,9 @@
+{
+  "outputs": {
+    "influx": {
+      "enabled": true,
+      "host": "localhost",
+      "database": "express_response_db"
+    }
+  }
+}
