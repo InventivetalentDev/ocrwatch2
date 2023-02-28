@@ -11,9 +11,11 @@ import {GoogleSpreadsheet} from "google-spreadsheet";
 export class Output {
 
     writeGame(data: GameData): void | Promise<void> {
+        return null;
     }
 
     writeImage(data: GameData, jmp: Jimp, canvas: string): void | Promise<void> {
+        return null;
     }
 
 }
@@ -65,6 +67,7 @@ export class RowOutput extends Output {
             "account",
             "hero",
             "mode",
+            "gamemode",
             "map",
             "competitive",
             "duration"
@@ -78,6 +81,7 @@ export class RowOutput extends Output {
             data.self.name,
             data.self.heroes.join('+'),
             data.match.mode,
+            data.match.gamemode,
             data.match.map,
             data.match.competitive,
             data.match.time.duration

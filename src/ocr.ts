@@ -7,8 +7,8 @@ import cv from "@techstark/opencv-js";
 export const MIN_CONFIDENCE = 60;
 
 const workers: { [key: string]: number } = {
-    default: 16,
-    chars: 2
+    default: 8,
+    chars: 1
 };
 const workerPool: { [type: string]: Worker[] } = {
     default: [],
