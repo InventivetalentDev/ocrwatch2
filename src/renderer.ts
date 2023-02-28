@@ -698,8 +698,9 @@ function updatePreview() {
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
+                .contrast(0.2)
+                .grayscale()
                 .scale(0.7)
-                .threshold({max: 140});
             const stats1 = resized.clone().crop(Coordinates.scoreboard.allies.stats1.from[0], Coordinates.scoreboard.allies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.stats1.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -834,8 +835,9 @@ function updatePreview() {
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
                 .invert()
+                .contrast(0.2)
+                .grayscale()
                 .scale(0.7)
-                .threshold({max: 180})
             const stats1 = resized.clone().crop(Coordinates.scoreboard.enemies.stats1.from[0], Coordinates.scoreboard.enemies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.stats1.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
