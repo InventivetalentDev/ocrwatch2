@@ -70,7 +70,16 @@ export interface GameData {
         status: {
             type: string,
             text: string,
-            lines: string[]
+            lines: string[],
+            state: string,
+            allies: {
+                time: '',
+                distance: ''
+            },
+            enemies: {
+                time: '',
+                distance: ''
+            }
         }
     },
     performance: any,
@@ -80,4 +89,16 @@ export interface GameData {
         allies: PlayerData,
         enemies: PlayerData
     }
+}
+
+
+
+export interface Session {
+    states: string[]
+    rank: string
+}
+
+export interface GlobalSession extends Session {
+    lastAccount: string
+    accounts: {[key: string]: Session}
 }

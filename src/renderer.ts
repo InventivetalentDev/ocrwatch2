@@ -5,10 +5,12 @@ import {Coordinates} from "./coordinates";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import Jimp from "jimp/es";
-import {GameData, OcrResult, PlayerData, Rect} from "./types";
+import {GameData, GlobalSession, OcrResult, PlayerData, Rect} from "./types";
 import {CSVOutput, GoogleSheetsOutput, JsonOutput, TSVOutput} from "./output/output";
 import deepmerge from "deepmerge";
 import {MIN_CONFIDENCE, ocr, ocr0} from "./ocr";
+import tinycolor from "tinycolor2";
+import RGBA = tinycolor.ColorFormats.RGBA;
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -49,6 +51,9 @@ let stream: MediaStream;
 const DEFAULT_PLAYER: PlayerData = {
     primary: '',
     secondary: '',
+    roleColor: {r: 0, g: 0, b: 0},
+    role: '',
+    grouped: false,
     name: '',
     eliminations: 0,
     assists: 0,
@@ -79,6 +84,7 @@ const DEFAULT_DATA: GameData = {
             duration: 0
         },
         status: {
+            type: '',
             text: "",
             lines: [],
             state: '',
@@ -109,6 +115,13 @@ for (let i = 0; i < 5; i++) {
 
 let data = deepmerge({}, DEFAULT_DATA);
 
+let session: GlobalSession = {
+    lastAccount: "",
+    states: [],
+    rank: "",
+    accounts: {}
+}
+
 
 try {
     data = JsonOutput.readJson("currentgame.json")
@@ -117,7 +130,9 @@ try {
     if (data.status !== 'in_progress') {
         resetData();
     }
-    updateDataDebug();
+    setTimeout(() => {
+        updateDataDebug();
+    }, 500);
 } catch (e) {
     console.log(e)
 }
@@ -129,14 +144,9 @@ function resetData() {
     data.times.end = new Date();
 }
 
-let session = {
-    states: [],
-    rank: "",
-    accounts: {}
-}
 
 function restoreSession(account: string) {
-    if (!session.accounts || !session.accounts.hasOwnProperty(account)) {
+    if (!session.accounts || !(account in session.accounts)) {
         return;
     }
     const acc = session.accounts[account];
@@ -158,7 +168,7 @@ for (const name of RANK_NAMES) {
     }
 }
 document.getElementById('rankSelect').addEventListener('change', () => {
-    if (session.lastAccount && session.accounts && session.accounts.hasOwnProperty(session.lastAccount)) {
+    if (session.lastAccount && session.accounts && (session.lastAccount in session.accounts)) {
         session.accounts[session.lastAccount].rank = (document.getElementById('rankSelect') as HTMLSelectElement).value;
         saveSession()
     }
@@ -166,7 +176,9 @@ document.getElementById('rankSelect').addEventListener('change', () => {
 
 try {
     session = JsonOutput.readJson("session.json")
-    updateDataDebug();
+    setTimeout(() => {
+        updateDataDebug();
+    }, 100);
 } catch (e) {
     console.log(e)
 }
@@ -332,24 +344,24 @@ function parseNumber(txt: string): number {
 let ocrRunning = false
 
 function getRole(jmp: Jimp): string {
-    const supportCheck1 = Jimp.intToRGBA(jmp.getPixelColor(6,21)) // bg
-    const supportCheck2 = Jimp.intToRGBA(jmp.getPixelColor(6,38)) // bg
-    const supportCheck3 = Jimp.intToRGBA(jmp.getPixelColor(14,24)) // white
+    const supportCheck1 = Jimp.intToRGBA(jmp.getPixelColor(6, 21)) // bg
+    const supportCheck2 = Jimp.intToRGBA(jmp.getPixelColor(6, 38)) // bg
+    const supportCheck3 = Jimp.intToRGBA(jmp.getPixelColor(14, 24)) // white
     const supportCheck = isBg(supportCheck1) && isBg(supportCheck2) && isWhite(supportCheck3);
-    const dpsCheck1 =  Jimp.intToRGBA(jmp.getPixelColor(7,23)) // white
-    const dpsCheck2 =  Jimp.intToRGBA(jmp.getPixelColor(7,38)) // white
-    const dpsCheck3 =  Jimp.intToRGBA(jmp.getPixelColor(14,23)) // white
+    const dpsCheck1 = Jimp.intToRGBA(jmp.getPixelColor(7, 23)) // white
+    const dpsCheck2 = Jimp.intToRGBA(jmp.getPixelColor(7, 38)) // white
+    const dpsCheck3 = Jimp.intToRGBA(jmp.getPixelColor(14, 23)) // white
     const dpsCheck = isWhite(dpsCheck1) && isWhite(dpsCheck2) && isWhite(dpsCheck3);
-    const tankCheck1 =  Jimp.intToRGBA(jmp.getPixelColor(7,22)) // white
-    const tankCheck2 =  Jimp.intToRGBA(jmp.getPixelColor(21,23)) // white
-    const tankCheck3 =  Jimp.intToRGBA(jmp.getPixelColor(6,41)) // bg
+    const tankCheck1 = Jimp.intToRGBA(jmp.getPixelColor(7, 22)) // white
+    const tankCheck2 = Jimp.intToRGBA(jmp.getPixelColor(21, 23)) // white
+    const tankCheck3 = Jimp.intToRGBA(jmp.getPixelColor(6, 41)) // bg
     const tankCheck = isWhite(tankCheck1) && isWhite(tankCheck2) && isBg(tankCheck3);
 
-    function isWhite(clr) {
-        return clr.r>250&&clr.g>250&&clr.b>250;
+    function isWhite(clr: RGBA) {
+        return clr.r > 250 && clr.g > 250 && clr.b > 250;
     }
 
-    function isBg(clr) {
+    function isBg(clr: RGBA) {
         return !isWhite(clr);
     }
 
@@ -433,8 +445,11 @@ function updatePreview() {
                     if (!session.accounts) {
                         session.accounts = {};
                     }
-                    if (!session.accounts.hasOwnProperty(session.lastAccount)) {
-                        session.accounts[session.lastAccount] = {};
+                    if (!(session.lastAccount in session.accounts)) {
+                        session.accounts[session.lastAccount] = {
+                            states: [],
+                            rank: ''
+                        };
                     }
 
                     restoreSession(data.self.name);
@@ -958,8 +973,8 @@ function writeOutputAndReset() {
     try {
         if (data.status !== 'reset' && data.status !== 'in_progress') {
             session.states.push(data.status);
-            if (session.accounts && session.accounts.hasOwnProperty(session.lastAccount)) {
-                session.accounts[session.lastAccounts].states.push(data.status);
+            if (session.accounts && (session.lastAccount in session.accounts)) {
+                session.accounts[session.lastAccount].states.push(data.status);
             }
             saveSession();
         }
@@ -991,7 +1006,7 @@ function writeOutputAndReset() {
 
 function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
-    document.getElementById('gameStates').textContent = session.states.map(s => s.substring(0, 1).toUpperCase()).join('')
+    document.getElementById('gameStates').textContent = session?.states?.map(s => s.substring(0, 1).toUpperCase()).join('') || '';
 }
 
 const winButton = document.getElementById('winButton') as HTMLButtonElement;
