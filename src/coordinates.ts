@@ -51,11 +51,11 @@ export class Coordinates {
         offsets: {
             nameAlly: <Offset>{
                 x: 145,
-                w: 210
+                w: 230
             },
             nameEnemy: <Offset>{ // (no ult charge)
                 x: 90,
-                w: 230
+                w: 285
             },
             elims: <Offset>{
                 x: 384,
@@ -97,8 +97,8 @@ export class Coordinates {
             size: [250, 45]
         },
         hero: <Rect>{
-            from: [1190, 350],
-            size: [280, 60]
+            from: [1195, 350],
+            size: [310, 60]
         },
         stats: <Rect>{
             from: [1195, 410],

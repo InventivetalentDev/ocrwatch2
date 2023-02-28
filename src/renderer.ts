@@ -636,11 +636,18 @@ function updatePreview() {
                     if (res.confidence > MIN_CONFIDENCE) {
                         try {
                             data.self.stats[i].text = res.text;
-                            const split = res.text.split(/([\do]+)([%]?)(.*)/);
+                            // const split = res.text.split(/([\do:]+)([%]?)(.*)/);
+                            const split = res.text.split('\n');
                             console.log(split);
-                            data.self.stats[i].value = parseNumber(split[1]);
-                            data.self.stats[i].unit = split[2];
-                            data.self.stats[i].title = cleanupText(split[split.length - 1].replace(',', '').replace('.', ''));
+                            let split0 = split[0];
+                            let unit = '';
+                            if (split0.endsWith('%')) {
+                                unit = '%';
+                                split0 = split0.substring(0, split0.length - 1);
+                            }
+                            data.self.stats[i].value = split0.includes(':')?split0: parseNumber(split0);
+                            data.self.stats[i].unit = unit;
+                            data.self.stats[i].title = cleanupText(split[1].replace(',', '').replace('.', ''));
                         } catch (e) {
                             console.log(e);
                         }

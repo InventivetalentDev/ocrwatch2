@@ -43,7 +43,7 @@ export interface PlayerData {
 export interface SelfStat {
     text: string
     title: string
-    value: number
+    value: number|string
     unit: string;
 }
 
