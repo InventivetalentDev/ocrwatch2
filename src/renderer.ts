@@ -276,6 +276,9 @@ function tmpImg(src: string): Promise<HTMLImageElement> {
         };
     })
     img.src = src;
+    setTimeout(()=>{
+        img.remove();
+    },1000)
     return promise;
 }
 
@@ -824,7 +827,7 @@ function updatePreview() {
 
             if (drawOutlines) {
                 ctx.fillStyle = `rgb(${roleClr.r},${roleClr.g},${roleClr.b})`
-                ctx.fillRect(Coordinates.scoreboard.allies.from[0] - 5, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
+                ctx.fillRect(Coordinates.scoreboard.allies.from[0] - 10, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i, 12, Coordinates.scoreboard.rowHeight);
             }
 
             if (drawLabels) {
@@ -984,7 +987,7 @@ function updatePreview() {
 
             if (drawOutlines) {
                 ctx.fillStyle = `rgb(${roleClr.r},${roleClr.g},${roleClr.b})`
-                ctx.fillRect(Coordinates.scoreboard.enemies.from[0] - 5, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
+                ctx.fillRect(Coordinates.scoreboard.enemies.from[0] - 10, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i, 12, Coordinates.scoreboard.rowHeight);
             }
 
             if (drawLabels) {
@@ -1290,7 +1293,11 @@ async function debugImage(id: string, jmp: Jimp | cv.Mat) {
         const canvas = document.createElement('canvas');
         cv.imshow(canvas, jmp);
         element.src = canvas.toDataURL('image/png');
-        document.body.appendChild(canvas)
+        document.body.appendChild(canvas);
+
+        setTimeout(()=>{
+            canvas.remove();
+        },1000)
     } else {
         element.src = await jmp.getBase64Async('image/png');
     }
@@ -1352,6 +1359,10 @@ async function handleImageContent(imageType: string, jimp: Jimp, cvImg: cv.Mat) 
     document.body.appendChild(canvas);
     // const content = await jimp.getBase64Async('image/png')
     element.src = canvas.toDataURL('image/png');
+
+    setTimeout(()=>{
+        canvas.remove();
+    },1000)
 
 }
 

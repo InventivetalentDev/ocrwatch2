@@ -27,22 +27,22 @@ export class Coordinates {
             }
         },
         enemies: <Rect>{
-            from: [312, 613],
+            from: [312, 614],
             size: [848, 307],
             role: <Rect>{
-                from: [314, 613],
+                from: [314, 614],
                 size: [28, 300]
             },
             name: <Rect>{
-                from: [410, 613],
+                from: [410, 614],
                 size: [166, 307]
             },
             stats1: <Rect>{
-                from: [688, 613],
+                from: [688, 614],
                 size: [166, 307]
             },
             stats2: <Rect>{
-                from: [858, 615],
+                from: [858, 614],
                 size: [303, 305]
             }
         },
