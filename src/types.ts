@@ -1,4 +1,5 @@
 import Jimp from "jimp";
+import cv from "@techstark/opencv-js";
 
 export interface Rect {
     from: [number, number];
@@ -15,7 +16,7 @@ export interface Offset {
 export interface OcrRequest {
     id: string;
     rect: Rect | null;
-    jmp: Jimp;
+    jmp: Jimp|cv.Mat;
     mode: string;
 }
 

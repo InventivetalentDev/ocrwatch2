@@ -55,7 +55,7 @@ export class Coordinates {
             },
             nameEnemy: <Offset>{ // (no ult charge)
                 x: 90,
-                w: 210
+                w: 230
             },
             elims: <Offset>{
                 x: 384,

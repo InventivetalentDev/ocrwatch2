@@ -2,6 +2,7 @@ import {createWorker, PSM, RecognizeOptions, Worker, WorkerParams} from "tessera
 import {JobQueue} from "jobqu";
 import {OcrRequest, OcrResult, Rect} from "./types";
 import Jimp from "jimp";
+import cv from "@techstark/opencv-js";
 
 export const MIN_CONFIDENCE = 60;
 
@@ -47,7 +48,7 @@ export async function ocr1(request: OcrRequest): Promise<OcrResult> {
 }
 
 
-export async function ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string, mode = 'default'): Promise<OcrResult> {
+export async function ocr(canvas: HTMLCanvasElement, jmp: Jimp|cv.Mat, rect: Rect, id: string, mode = 'default'): Promise<OcrResult> {
     updateTextDebug(id, "....", 0, true);
     return ocrQueue.add({
         jmp,
@@ -61,7 +62,12 @@ export async function _ocr1(request: OcrRequest): Promise<OcrResult> {
     return _ocr(null, request.jmp, request.rect, request.id, request.mode);
 }
 
-export async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id: string, mode = 'default'): Promise<OcrResult> {
+
+export function isMat(obj: any): obj is cv.Mat {
+    return 'cols' in obj;
+}
+
+export async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp|cv.Mat, rect: Rect, id: string, mode = 'default'): Promise<OcrResult> {
     if (workerBusys.get(id)) {
         return;
     }
@@ -83,7 +89,15 @@ export async function _ocr(canvas: HTMLCanvasElement, jmp: Jimp, rect: Rect, id:
                 height: rect.size[1]
             }
         }
-        recognized = await worker.recognize(await jmp.getBufferAsync('image/png'), options, {
+        let rec;
+        if (isMat(jmp)) {
+            const canvas = document.createElement('canvas') as HTMLCanvasElement;
+            cv.imshow(canvas, jmp);
+            rec = canvas;
+        }else{
+            rec = await jmp.getBufferAsync('image/png')
+        }
+        recognized = await worker.recognize(rec, options, {
             text: true,
             pdf: false,
             tsv: false,

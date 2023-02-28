@@ -8,11 +8,10 @@ import Jimp from "jimp/es";
 import {GameData, GlobalSession, OcrResult, PlayerData, Rect} from "./types";
 import {CSVOutput, GoogleSheetsOutput, JsonOutput, TSVOutput} from "./output/output";
 import deepmerge from "deepmerge";
-import {MIN_CONFIDENCE, ocr, ocr0} from "./ocr";
+import {isMat, MIN_CONFIDENCE, ocr, ocr0} from "./ocr";
 import tinycolor from "tinycolor2";
 import RGBA = tinycolor.ColorFormats.RGBA;
 import cv from "@techstark/opencv-js"
-import * as buffer from "buffer";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -291,15 +290,32 @@ ipcRenderer.on('takeScreenshot', async (event) => {
     takeScreenshot();
 })
 
+let cvResized: cv.Mat;
+let cvGrayscale: cv.Mat;
+let cvInverted: cv.Mat;
+let cvContrast: cv.Mat;
+
 async function processScreenshot(jmp: Jimp, img: HTMLElement) {
     console.time('processScreenshot')
 
     const cvImg = cv.imread(img)
 
+    if (!cvResized) {
+        cvResized = new cv.Mat()
+    }
+    if (!cvGrayscale) {
+        cvGrayscale = new cv.Mat()
+    }
+    if (!cvInverted) {
+        cvInverted = new cv.Mat()
+    }
+    if (!cvContrast) {
+        cvContrast = new cv.Mat()
+    }
 
-    console.time('processScreenshot.resized')
+    console.time('processScreenshot.resized');
     const resized = await jmp.resize(Coordinates.screen.width, Coordinates.screen.height);
-    const cvResized = new cv.Mat()
+
     try {
         cv.resize(cvImg, cvResized, {width: Coordinates.screen.width, height: Coordinates.screen.height});
     } catch (e) {
@@ -311,7 +327,6 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
     console.time('processScreenshot.grayscale')
     const grayscale = await resized.clone()
         .grayscale();
-    const cvGrayscale = new cv.Mat()
     try {
         cv.cvtColor(cvResized, cvGrayscale, cv.COLOR_RGB2GRAY);
     } catch (e) {
@@ -322,7 +337,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
 
     console.time('processScreenshot.inverted')
     const inverted = await grayscale.clone().invert();
-    const cvInverted = new cv.Mat();
+
     try {
         cv.bitwise_not(cvGrayscale, cvInverted);
     } catch (e) {
@@ -333,7 +348,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
 
     console.time('processScreenshot.contrast')
     const contrast = await inverted.clone().contrast(0.1)
-    const cvContrast = new cv.Mat();
+
     try {
         // https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv
         cv.addWeighted(cvInverted, 1.1, cvInverted, 0, 1, cvContrast);
@@ -342,6 +357,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
     }
     handleImageContent('contrast', contrast, cvContrast);
     console.timeEnd('processScreenshot.contrast')
+
 
     // console.time('processScreenshot.threshold')
     // const threshold = await contrast.clone().threshold({max: 180, autoGreyscale: false})
@@ -407,6 +423,32 @@ function parseNumber(txt: string): number {
 }
 
 let ocrRunning = false
+
+
+let nameTransform: cv.Mat;
+
+function getNameTransform(): cv.Mat {
+    if (nameTransform) {
+        return nameTransform;
+    }
+    const pts1 = cv.matFromArray(4, 1, cv.CV_32FC2,
+        [
+            5, 0,
+            95, 0,
+            0, 25,
+            90, 25
+        ]
+    )
+    const pts2 = cv.matFromArray(4, 1, cv.CV_32FC2,
+        [
+            -5, 0,
+            95, 0,
+            -3, 25,
+            97, 25
+        ]
+    )
+    return nameTransform = cv.getPerspectiveTransform(pts1, pts2)
+}
 
 function getRole(jmp: Jimp): string {
     console.time('getRole')
@@ -491,6 +533,12 @@ function updatePreview() {
             ctx.strokeRect(Coordinates.self.name.from[0], Coordinates.self.name.from[1],
                 Coordinates.self.name.size[0], Coordinates.self.name.size[1])
         }
+        // const cvNameplate = cvContrast.roi({
+        //     x:Coordinates.self.name.from[0],
+        //     y:Coordinates.self.name.from[1],
+        //     width: Coordinates.self.name.size[0],
+        //     height: Coordinates.self.name.size[1]
+        // })
         const nameplate = contrast.clone()
             .crop(Coordinates.self.name.from[0], Coordinates.self.name.from[1], Coordinates.self.name.size[0], Coordinates.self.name.size[1])
             .rotate(-4.5)
@@ -528,17 +576,34 @@ function updatePreview() {
             }))
     }
 
+    let cvHero = cvResized.roi({
+        x: Coordinates.self.hero.from[0],
+        y: Coordinates.self.hero.from[1],
+        width: Coordinates.self.hero.size[0],
+        height: Coordinates.self.hero.size[1]
+    });
+    cv.cvtColor(cvHero, cvHero, cv.COLOR_RGB2GRAY);
+    cv.bitwise_not(cvHero, cvHero);
+    cv.warpPerspective(cvHero, cvHero, getNameTransform(), {
+        width: Coordinates.self.hero.size[0],
+        height: Coordinates.self.hero.size[1]
+    }, cv.INTER_LINEAR, cv.BORDER_REPLICATE, new cv.Scalar())
+    cv.resize(cvHero, cvHero, {
+        width: Coordinates.self.hero.size[0] * 0.7,
+        height: Coordinates.self.hero.size[1] * 0.7
+    })
+
     const heroName = contrast.clone()
         .crop(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1], Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
         .contrast(0.1)
         .scale(0.5)
         .threshold({max: 175, autoGreyscale: false});
-    debugImage('heroName', heroName);
+    debugImage('heroName', cvHero);
     if (drawOutlines) {
         ctx.strokeRect(Coordinates.self.hero.from[0], Coordinates.self.hero.from[1],
             Coordinates.self.hero.size[0], Coordinates.self.hero.size[1])
     }
-    ocrPromises.push(ocr(canvas, heroName, null, 'self-hero', 'chars')
+    ocrPromises.push(ocr(canvas, cvHero, null, 'self-hero', 'chars')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE || !data.self.hero) {
                 data.self.hero = cleanupText(res.text)
@@ -623,6 +688,12 @@ function updatePreview() {
         ctx.strokeRect(Coordinates.match.status.from[0], Coordinates.match.status.from[1],
             Coordinates.match.status.size[0], Coordinates.match.status.size[1])
     }
+    const cvMatchStatus = cvResized.roi({
+        x: Coordinates.match.status.from[0],
+        y: Coordinates.match.status.from[1],
+        width: Coordinates.match.status.size[0],
+        height: Coordinates.match.status.size[1]
+    })
     const matchStatus = resized.clone()
         .crop(Coordinates.match.status.from[0], Coordinates.match.status.from[1], Coordinates.match.status.size[0], Coordinates.match.status.size[1])
         // .color([
@@ -635,9 +706,9 @@ function updatePreview() {
         .contrast(0.1)
     // .scale(1.1)
     // .threshold({max:140})
-    debugImage('match-status', matchStatus);
+    debugImage('match-status', cvMatchStatus);
     document.getElementById('imgDebug').append(document.createElement('br'));
-    ocrPromises.push(ocr(canvas, matchStatus, null, 'match-status')
+    ocrPromises.push(ocr(canvas, cvMatchStatus, null, 'match-status')
         .then(res => {
             if (res.confidence > 60) {
                 try {
@@ -724,6 +795,7 @@ function updatePreview() {
 
             const role = resized.clone().crop(Coordinates.scoreboard.allies.role.from[0], Coordinates.scoreboard.allies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight);
+            debugImage('allies-' + i + '-role', role);
             const roleClr = Jimp.intToRGBA(role.getPixelColor(5, 5))
             data.allies[i].roleColor = roleClr;
             data.allies[i].grouped = roleClr.g > roleClr.r && roleClr.g > roleClr.b;
@@ -742,6 +814,27 @@ function updatePreview() {
                 });
             }
 
+            let cvName = cvResized.clone().roi({
+                x: Coordinates.scoreboard.allies.name.from[0],
+                y: Coordinates.scoreboard.allies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
+                width: Coordinates.scoreboard.allies.name.size[0],
+                height: Coordinates.scoreboard.rowHeight
+            });
+            cv.cvtColor(cvName, cvName, cv.COLOR_RGB2GRAY);
+            cv.bitwise_not(cvName, cvName);
+            cv.warpPerspective(cvName, cvName, getNameTransform(), {
+                width: Coordinates.scoreboard.allies.name.size[0],
+                height: Coordinates.scoreboard.rowHeight
+            }, cv.INTER_LINEAR, cv.BORDER_REPLICATE, new cv.Scalar())
+            cvName = cvName.roi({
+                x: 0,
+                y: 10,
+                width: cvName.size().width,
+                height: cvName.size().height - 30
+            })
+
+            debugImage('allies-' + i + '-name', cvName);
+
             const name = resized.clone().crop(Coordinates.scoreboard.allies.name.from[0], Coordinates.scoreboard.allies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.name.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -756,6 +849,7 @@ function updatePreview() {
                 // .color([
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
+                .crop(0, 15, Coordinates.scoreboard.allies.stats1.size[0], Coordinates.scoreboard.rowHeight - 30)
                 .invert()
                 .threshold({max: 200})
             const stats2 = resized.clone().crop(Coordinates.scoreboard.allies.stats2.from[0], Coordinates.scoreboard.allies.stats2.from[1] + Coordinates.scoreboard.rowHeight * i,
@@ -763,13 +857,13 @@ function updatePreview() {
                 // .color([
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
+                .crop(0, 15, Coordinates.scoreboard.allies.stats2.size[0], Coordinates.scoreboard.rowHeight - 30)
                 .invert()
                 .threshold({max: 200})
-            debugImage('allies-' + i + '-role', role);
-            debugImage('allies-' + i + '-name', name);
+
             debugImage('allies-' + i + '-primary', stats1);
             debugImage('allies-' + i + '-secondary', stats2);
-            ocrPromises.push(ocr(canvas, name, null, 'allies-' + i + '-name', 'chars')
+            ocrPromises.push(ocr(canvas, cvName, null, 'allies-' + i + '-name',)
                 .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
                         data.allies[i].name = cleanupText(res.text);
@@ -879,6 +973,25 @@ function updatePreview() {
                 });
             }
 
+            let cvName = cvResized.roi({
+                x: Coordinates.scoreboard.enemies.name.from[0],
+                y: Coordinates.scoreboard.enemies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
+                width: Coordinates.scoreboard.enemies.name.size[0],
+                height: Coordinates.scoreboard.rowHeight
+            });
+            cv.cvtColor(cvName, cvName, cv.COLOR_RGB2GRAY);
+            cv.bitwise_not(cvName, cvName);
+            cv.warpPerspective(cvName, cvName, getNameTransform(), {
+                width: Coordinates.scoreboard.enemies.name.size[0],
+                height: Coordinates.scoreboard.rowHeight
+            }, cv.INTER_LINEAR, cv.BORDER_REPLICATE, new cv.Scalar())
+            cvName = cvName.roi({
+                x: 0,
+                y: 10,
+                width: cvName.size().width,
+                height: cvName.size().height - 28
+            })
+
             const name = resized.clone().crop(Coordinates.scoreboard.enemies.name.from[0], Coordinates.scoreboard.enemies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.name.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -893,6 +1006,7 @@ function updatePreview() {
                 // .color([
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
+                .crop(0, 15, Coordinates.scoreboard.enemies.stats1.size[0], Coordinates.scoreboard.rowHeight - 30)
                 .invert()
                 .threshold({max: 220})
             const stats2 = resized.clone().crop(Coordinates.scoreboard.enemies.stats2.from[0], Coordinates.scoreboard.enemies.stats2.from[1] + Coordinates.scoreboard.rowHeight * i,
@@ -900,12 +1014,13 @@ function updatePreview() {
                 // .color([
                 //     {apply: "xor", params: ["#127A93"]}
                 // ])
+                .crop(0, 15, Coordinates.scoreboard.enemies.stats2.size[0], Coordinates.scoreboard.rowHeight - 30)
                 .invert()
                 .threshold({max: 220})
-            debugImage('enemies-' + i + '-name', name);
+            debugImage('enemies-' + i + '-name', cvName);
             debugImage('enemies-' + i + '-primary', stats1);
             debugImage('enemies-' + i + '-secondary', stats2);
-            ocrPromises.push(ocr(canvas, name, null, 'enemies-' + i + '-name', 'chars')
+            ocrPromises.push(ocr(canvas, cvName, null, 'enemies-' + i + '-name',)
                 .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
                         data.enemies[i].name = cleanupText(res.text);
@@ -1142,7 +1257,7 @@ resetButton.addEventListener('click', () => {
 })
 
 
-async function debugImage(id: string, jmp: Jimp) {
+async function debugImage(id: string, jmp: Jimp | cv.Mat) {
     let element: HTMLImageElement = document.querySelector('.img-debug#' + id);
     if (!element) {
         element = document.createElement('img');
@@ -1150,7 +1265,14 @@ async function debugImage(id: string, jmp: Jimp) {
         element.id = id;
         document.getElementById('imgDebug').appendChild(element);
     }
-    element.src = await jmp.getBase64Async('image/png');
+    if (isMat(jmp)) {
+        const canvas = document.createElement('canvas');
+        cv.imshow(canvas, jmp);
+        element.src = canvas.toDataURL('image/png');
+        document.body.appendChild(canvas)
+    } else {
+        element.src = await jmp.getBase64Async('image/png');
+    }
 }
 
 // ipcRenderer.on('screenshotContent', async (event, sourceId) => {
@@ -1206,6 +1328,7 @@ async function handleImageContent(imageType: string, jimp: Jimp, cvImg: cv.Mat) 
 
     const canvas = document.createElement('canvas') as HTMLCanvasElement;
     cv.imshow(canvas, cvImg);
+    document.body.appendChild(canvas);
     // const content = await jimp.getBase64Async('image/png')
     element.src = canvas.toDataURL('image/png');
 
