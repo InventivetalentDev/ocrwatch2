@@ -457,10 +457,10 @@ function getRole(jmp: Jimp): string {
     jmp = jmp.contrast(0.2);
 
 
-    const topLeft = Jimp.intToRGBA(jmp.getPixelColor(6,22));
-    const topRight = Jimp.intToRGBA(jmp.getPixelColor(20,22));
-    const bottomLeft = Jimp.intToRGBA(jmp.getPixelColor(6,38));
-    const bottomRight = Jimp.intToRGBA(jmp.getPixelColor(20,38));
+    const topLeft = Jimp.intToRGBA(jmp.getPixelColor(6, 22));
+    const topRight = Jimp.intToRGBA(jmp.getPixelColor(20, 22));
+    const bottomLeft = Jimp.intToRGBA(jmp.getPixelColor(6, 38));
+    const bottomRight = Jimp.intToRGBA(jmp.getPixelColor(20, 38));
 
     function isWhite(clr: RGBA) {
         return clr.r > 230 && clr.g > 230 && clr.b > 230;
@@ -657,7 +657,7 @@ function updatePreview() {
                                 unit = '%';
                                 split0 = split0.substring(0, split0.length - 1);
                             }
-                            data.self.stats[i].value = split0.includes(':')?split0: parseNumber(split0);
+                            data.self.stats[i].value = split0.includes(':') ? split0 : parseNumber(split0);
                             data.self.stats[i].unit = unit;
                             data.self.stats[i].title = cleanupText(split[1].replace(',', '').replace('.', ''));
                         } catch (e) {
@@ -828,7 +828,7 @@ function updatePreview() {
             }
 
             if (drawLabels) {
-                drawLabel(`${data.allies[i].grouped?'G':''}${data.allies[i].role.substring(0, 1).toUpperCase()}`, {
+                drawLabel(`${data.allies[i].grouped ? 'G' : ''}${data.allies[i].role.substring(0, 1).toUpperCase()}`, {
                     from: [Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
                     size: [Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight]
                 });
@@ -977,6 +977,7 @@ function updatePreview() {
 
             const role = resized.clone().crop(Coordinates.scoreboard.enemies.role.from[0], Coordinates.scoreboard.enemies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.role.size[0], Coordinates.scoreboard.rowHeight);
+            debugImage('enemies-' + i + '-role', role);
             const roleClr = Jimp.intToRGBA(role.getPixelColor(2, 2)) // shifted to avoid getting color from chat
             data.enemies[i].roleColor = roleClr;
             data.enemies[i].role = getRole(role);

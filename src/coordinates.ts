@@ -31,7 +31,7 @@ export class Coordinates {
             size: [848, 307],
             role: <Rect>{
                 from: [314, 613],
-                size: [30, 305]
+                size: [28, 300]
             },
             name: <Rect>{
                 from: [410, 613],
