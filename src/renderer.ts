@@ -689,7 +689,7 @@ function updatePreview() {
 
                     data.match.info = cleanupText(res.text);
                     const mapSplit = data.match.info.split("|");
-                    const modeSplit = mapSplit[0].split("-");
+                    const modeSplit = mapSplit[0].split(/[><-]/);
                     data.match.mode = cleanupText(modeSplit[0]);
                     data.match.map = cleanupText(mapSplit[1]);
                     data.match.gamemode = cleanupText(modeSplit[1])
@@ -765,6 +765,16 @@ function updatePreview() {
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
                 data.performance.text = cleanupText(res.text);
+                const split = data.performance.text.split("|");
+                data.performance.split = split;
+                data.performance.parts = {};
+                for (let s of split) {
+                    if(!s) continue
+                    s = s.trim()
+                    if(s.length<=0) continue
+                    const split1 = s.split(":");
+                    data.performance.parts[split1[0].trim()] = split1[1].trim();
+                }
             }
         }))
 
@@ -886,10 +896,14 @@ function updatePreview() {
 
             debugImage('allies-' + i + '-primary', stats1);
             debugImage('allies-' + i + '-secondary', stats2);
-            ocrPromises.push(ocr(canvas, cvName, null, 'allies-' + i + '-name',)
+            ocrPromises.push(ocr(canvas, cvName, null, 'allies-' + i + '-name')
                 .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
                         data.allies[i].name = cleanupText(res.text);
+                    }
+
+                    if (data.allies[i].name.includes('FOR PLAYER')) {
+                        data.allies[i].vacant = true;
                     }
 
                     if (drawLabels) {
@@ -1050,6 +1064,9 @@ function updatePreview() {
                         data.enemies[i].name = cleanupText(res.text);
                     }
 
+                    if (data.enemies[i].name.includes('FOR PLAYER')) {
+                        data.enemies[i].vacant = true;
+                    }
 
                     if (drawLabels) {
                         drawLabel(`${data.enemies[i].name}`, {
