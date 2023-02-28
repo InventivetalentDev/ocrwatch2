@@ -331,6 +331,31 @@ function parseNumber(txt: string): number {
 
 let ocrRunning = false
 
+function getRole(jmp: Jimp): string {
+    const supportCheck1 = Jimp.intToRGBA(jmp.getPixelColor(6,21)) // bg
+    const supportCheck2 = Jimp.intToRGBA(jmp.getPixelColor(6,38)) // bg
+    const supportCheck3 = Jimp.intToRGBA(jmp.getPixelColor(14,24)) // white
+    const supportCheck = isBg(supportCheck1) && isBg(supportCheck2) && isWhite(supportCheck3);
+    const dpsCheck1 =  Jimp.intToRGBA(jmp.getPixelColor(7,23)) // white
+    const dpsCheck2 =  Jimp.intToRGBA(jmp.getPixelColor(7,38)) // white
+    const dpsCheck3 =  Jimp.intToRGBA(jmp.getPixelColor(14,23)) // white
+    const dpsCheck = isWhite(dpsCheck1) && isWhite(dpsCheck2) && isWhite(dpsCheck3);
+    const tankCheck1 =  Jimp.intToRGBA(jmp.getPixelColor(7,22)) // white
+    const tankCheck2 =  Jimp.intToRGBA(jmp.getPixelColor(21,23)) // white
+    const tankCheck3 =  Jimp.intToRGBA(jmp.getPixelColor(6,41)) // bg
+    const tankCheck = isWhite(tankCheck1) && isWhite(tankCheck2) && isBg(tankCheck3);
+
+    function isWhite(clr) {
+        return clr.r>250&&clr.g>250&&clr.b>250;
+    }
+
+    function isBg(clr) {
+        return !isWhite(clr);
+    }
+
+    return supportCheck ? 'support' : dpsCheck ? 'dps' : tankCheck ? 'tank' : 'unknown';
+}
+
 function updatePreview() {
     if (ocrRunning) {
         return;
@@ -616,31 +641,10 @@ function updatePreview() {
             const role = resized.clone().crop(Coordinates.scoreboard.allies.role.from[0], Coordinates.scoreboard.allies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight);
             const roleClr = Jimp.intToRGBA(role.getPixelColor(5, 5))
-            //TODO: same for enemies
             data.allies[i].roleColor = roleClr;
             data.allies[i].grouped = roleClr.g > roleClr.r && roleClr.g > roleClr.b;
-            const supportCheck1 = Jimp.intToRGBA(role.getPixelColor(6,21)) // bg
-            const supportCheck2 = Jimp.intToRGBA(role.getPixelColor(6,38)) // bg
-            const supportCheck3 = Jimp.intToRGBA(role.getPixelColor(14,24)) // white
-            const supportCheck = isBg(supportCheck1) && isBg(supportCheck2) && isWhite(supportCheck3);
-            const dpsCheck1 =  Jimp.intToRGBA(role.getPixelColor(7,23)) // white
-            const dpsCheck2 =  Jimp.intToRGBA(role.getPixelColor(7,38)) // white
-            const dpsCheck3 =  Jimp.intToRGBA(role.getPixelColor(14,23)) // white
-            const dpsCheck = isWhite(dpsCheck1) && isWhite(dpsCheck2) && isWhite(dpsCheck3);
-            const tankCheck1 =  Jimp.intToRGBA(role.getPixelColor(7,22)) // white
-            const tankCheck2 =  Jimp.intToRGBA(role.getPixelColor(21,23)) // white
-            const tankCheck3 =  Jimp.intToRGBA(role.getPixelColor(6,41)) // bg
-            const tankCheck = isWhite(tankCheck1) && isWhite(tankCheck2) && isBg(tankCheck3);
 
-            function isWhite(clr) {
-                return clr.r>250&&clr.g>250&&clr.b>250;
-            }
-
-            function isBg(clr) {
-                return !isWhite(clr);
-            }
-
-            data.allies[i].role = supportCheck ? 'support' : dpsCheck ? 'dps' : tankCheck ? 'tank' : 'unknown';
+            data.allies[i].role = getRole(role);
 
             const name = resized.clone().crop(Coordinates.scoreboard.allies.name.from[0], Coordinates.scoreboard.allies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.name.size[0], Coordinates.scoreboard.rowHeight)
@@ -759,6 +763,12 @@ function updatePreview() {
                 ctx.lineTo(Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.enemies.size[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i)
                 ctx.stroke()
             }
+
+            const role = resized.clone().crop(Coordinates.scoreboard.enemies.role.from[0], Coordinates.scoreboard.enemies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
+                Coordinates.scoreboard.enemies.role.size[0], Coordinates.scoreboard.rowHeight);
+            const roleClr = Jimp.intToRGBA(role.getPixelColor(5, 5))
+            data.enemies[i].roleColor = roleClr;
+            data.enemies[i].role = getRole(role);
 
             const name = resized.clone().crop(Coordinates.scoreboard.enemies.name.from[0], Coordinates.scoreboard.enemies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.name.size[0], Coordinates.scoreboard.rowHeight)

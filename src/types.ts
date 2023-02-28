@@ -27,6 +27,9 @@ export interface OcrResult {
 export interface PlayerData {
     primary: string
     secondary: string
+    roleColor: { r: number; g: number; b: number; }
+    role: string;
+    grouped: boolean;
     name: string;
     eliminations: number
     assists: number
@@ -48,7 +51,7 @@ export interface GameData {
         start: Date,
         end: Date
     },
-    status: 'in_progress' | 'win' | 'draw' | 'loss'|'reset'
+    status: 'in_progress' | 'win' | 'draw' | 'loss' | 'reset'
     self: {
         name: string,
         hero: string,
