@@ -454,30 +454,41 @@ function getNameTransform(): cv.Mat {
 function getRole(jmp: Jimp): string {
     console.time('getRole')
 
-    const supportCheck1 = Jimp.intToRGBA(jmp.getPixelColor(6, 21)) // bg
-    const supportCheck2 = Jimp.intToRGBA(jmp.getPixelColor(6, 38)) // bg
-    const supportCheck3 = Jimp.intToRGBA(jmp.getPixelColor(14, 24)) // white
-    const supportCheck = isBg(supportCheck1) && isBg(supportCheck2) && isWhite(supportCheck3);
-    const dpsCheck1 = Jimp.intToRGBA(jmp.getPixelColor(7, 23)) // white
-    const dpsCheck2 = Jimp.intToRGBA(jmp.getPixelColor(7, 38)) // white
-    const dpsCheck3 = Jimp.intToRGBA(jmp.getPixelColor(14, 23)) // white
-    const dpsCheck = isWhite(dpsCheck1) && isWhite(dpsCheck2) && isWhite(dpsCheck3);
-    const tankCheck1 = Jimp.intToRGBA(jmp.getPixelColor(7, 22)) // white
-    const tankCheck2 = Jimp.intToRGBA(jmp.getPixelColor(21, 23)) // white
-    const tankCheck3 = Jimp.intToRGBA(jmp.getPixelColor(6, 41)) // bg
-    const tankCheck = isWhite(tankCheck1) && isWhite(tankCheck2) && isBg(tankCheck3);
+    jmp = jmp.contrast(0.2);
+
+
+    const topLeft = Jimp.intToRGBA(jmp.getPixelColor(6,22));
+    const topRight = Jimp.intToRGBA(jmp.getPixelColor(20,22));
+    const bottomLeft = Jimp.intToRGBA(jmp.getPixelColor(6,38));
+    const bottomRight = Jimp.intToRGBA(jmp.getPixelColor(20,38));
 
     function isWhite(clr: RGBA) {
-        return clr.r > 250 && clr.g > 250 && clr.b > 250;
+        return clr.r > 230 && clr.g > 230 && clr.b > 230;
     }
 
     function isBg(clr: RGBA) {
         return !isWhite(clr);
     }
 
-    console.timeEnd('getRole')
+    console.timeEnd('getRole');
 
-    return supportCheck ? 'support' : dpsCheck ? 'dps' : tankCheck ? 'tank' : 'unknown';
+    console.log(topLeft);
+    console.log(topRight);
+    console.log(bottomLeft);
+    console.log(bottomRight);
+
+    if (isWhite(topLeft) && isWhite(topRight)) { // tank or dps
+        if (isWhite(bottomLeft) && isWhite(bottomRight)) {
+            console.log("dps")
+            return 'dps';
+        }
+        console.log("tank")
+        return 'tank';
+    }
+    console.log("support")
+    return 'support';
+
+    // return tankCheck ? 'tank' : supportCheck ? 'support' : dpsCheck ? 'dps' :  'unknown';
 }
 
 function updatePreview() {
