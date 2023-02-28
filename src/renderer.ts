@@ -246,12 +246,15 @@ async function takeVideoSnapshot(): Promise<string> {
     if (!videoCanvas) {
         return null;
     }
+    console.time('takeVideoSnapshot')
     videoCanvas.width = video.videoWidth;
     videoCanvas.height = video.videoHeight;
     const ctx = videoCanvas.getContext('2d');
     ctx.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
 
-    return videoCanvas.toDataURL('image/png');
+    const url = videoCanvas.toDataURL('image/png');
+    console.timeEnd('takeVideoSnapshot')
+    return url;
 }
 
 ipcRenderer.on('setSource', async (event, sourceId) => {
@@ -267,29 +270,41 @@ ipcRenderer.on('takeScreenshot', async (event) => {
 })
 
 async function processScreenshot(jmp: Jimp) {
+    console.time('processScreenshot')
+
+    console.time('processScreenshot.resized')
     const resized = await jmp.resize(Coordinates.screen.width, Coordinates.screen.height);
     handleImageContent('resized', resized);
-    // mainWindow.webContents.send('imageContent', 'resized', await resized.getBase64Async('image/png'));
+    console.timeEnd('processScreenshot.resized')
 
+    console.time('processScreenshot.grayscale')
     const grayscale = await resized.clone()
         .grayscale();
     handleImageContent('grayscale', grayscale);
-    // mainWindow.webContents.send('imageContent', 'grayscale', await grayscale.getBase64Async('image/png'));
+    console.timeEnd('processScreenshot.grayscale')
 
+    console.time('processScreenshot.inverted')
     const inverted = await grayscale.clone().invert();
     handleImageContent('inverted', inverted);
-    // mainWindow.webContents.send('imageContent', 'inverted', await inverted.getBase64Async('image/png'));
+    console.timeEnd('processScreenshot.inverted')
 
+    console.time('processScreenshot.contrast')
     const contrast = await inverted.clone().contrast(0.1)
     handleImageContent('contrast', contrast);
+    console.timeEnd('processScreenshot.contrast')
 
-    const threshold = await contrast.clone().threshold({max: 180, autoGreyscale: false})
-    handleImageContent('threshold', threshold);
-    // mainWindow.webContents.send('imageContent', 'contrast', await contrast.getBase64Async('image/png'));
+    // console.time('processScreenshot.threshold')
+    // const threshold = await contrast.clone().threshold({max: 180, autoGreyscale: false})
+    // handleImageContent('threshold', threshold);
+    // console.timeEnd('processScreenshot.threshold')
 
-    const maskJmp = await Jimp.read("https://i.imgur.com/uzNlsBC.png");
-    const masked = await contrast.clone().blit(maskJmp, 0, 0);
-    handleImageContent('masked', masked);
+    // console.time('processScreenshot.masked')
+    // const maskJmp = await Jimp.read("https://i.imgur.com/uzNlsBC.png");
+    // const masked = await contrast.clone().blit(maskJmp, 0, 0);
+    // handleImageContent('masked', masked);
+    // console.timeEnd('processScreenshot.masked')
+
+    console.timeEnd('processScreenshot')
 
     ///////////
 
@@ -344,6 +359,8 @@ function parseNumber(txt: string): number {
 let ocrRunning = false
 
 function getRole(jmp: Jimp): string {
+    console.time('getRole')
+
     const supportCheck1 = Jimp.intToRGBA(jmp.getPixelColor(6, 21)) // bg
     const supportCheck2 = Jimp.intToRGBA(jmp.getPixelColor(6, 38)) // bg
     const supportCheck3 = Jimp.intToRGBA(jmp.getPixelColor(14, 24)) // white
@@ -364,6 +381,8 @@ function getRole(jmp: Jimp): string {
     function isBg(clr: RGBA) {
         return !isWhite(clr);
     }
+
+    console.timeEnd('getRole')
 
     return supportCheck ? 'support' : dpsCheck ? 'dps' : tankCheck ? 'tank' : 'unknown';
 }
@@ -661,6 +680,18 @@ function updatePreview() {
 
             data.allies[i].role = getRole(role);
 
+            if (drawOutlines) {
+                ctx.fillStyle = `rgb(${roleClr.r},${roleClr.g},${roleClr.b})`
+                ctx.fillRect(Coordinates.scoreboard.allies.from[0]-5, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
+            }
+
+            if (drawLabels) {
+                drawLabel(`${data.allies[i].role.substring(0,1).toUpperCase()}`, {
+                    from: [Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight]
+                });
+            }
+
             const name = resized.clone().crop(Coordinates.scoreboard.allies.name.from[0], Coordinates.scoreboard.allies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.name.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -668,7 +699,7 @@ function updatePreview() {
                 // ])
                 .invert()
                 .scale(0.7)
-                .threshold({max: 140})
+                .threshold({max: 140});
             const stats1 = resized.clone().crop(Coordinates.scoreboard.allies.stats1.from[0], Coordinates.scoreboard.allies.stats1.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.stats1.size[0], Coordinates.scoreboard.rowHeight)
                 // .color([
@@ -781,9 +812,21 @@ function updatePreview() {
 
             const role = resized.clone().crop(Coordinates.scoreboard.enemies.role.from[0], Coordinates.scoreboard.enemies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.role.size[0], Coordinates.scoreboard.rowHeight);
-            const roleClr = Jimp.intToRGBA(role.getPixelColor(5, 5))
+            const roleClr = Jimp.intToRGBA(role.getPixelColor(2, 2)) // shifted to avoid getting color from chat
             data.enemies[i].roleColor = roleClr;
             data.enemies[i].role = getRole(role);
+
+            if (drawOutlines) {
+                ctx.fillStyle = `rgb(${roleClr.r},${roleClr.g},${roleClr.b})`
+                ctx.fillRect(Coordinates.scoreboard.enemies.from[0]-5, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
+            }
+
+            if (drawLabels) {
+                drawLabel(`${data.enemies[i].role.substring(0,1).toUpperCase()}`, {
+                    from: [Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
+                    size: [Coordinates.scoreboard.enemies.role.size[0], Coordinates.scoreboard.rowHeight]
+                });
+            }
 
             const name = resized.clone().crop(Coordinates.scoreboard.enemies.name.from[0], Coordinates.scoreboard.enemies.name.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.name.size[0], Coordinates.scoreboard.rowHeight)
@@ -1105,7 +1148,7 @@ async function handleImageContent(imageType: string, jimp: Jimp) {
         option.text = imageType;
         select.appendChild(option);
 
-        if (imageType === 'masked') {
+        if (imageType === 'masked'||imageType==='contrast') {
             option.selected = true;
         }
     }
