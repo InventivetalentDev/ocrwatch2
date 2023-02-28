@@ -11,6 +11,8 @@ import deepmerge from "deepmerge";
 import {MIN_CONFIDENCE, ocr, ocr0} from "./ocr";
 import tinycolor from "tinycolor2";
 import RGBA = tinycolor.ColorFormats.RGBA;
+import cv from "@techstark/opencv-js"
+import * as buffer from "buffer";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -35,9 +37,6 @@ document.getElementById('screenshotBtn').addEventListener('click', e => {
 
 const imageSelect = document.getElementById('imageSelect') as HTMLSelectElement;
 
-imageSelect.addEventListener('click', e => {
-    updatePreview();
-});
 imageSelect.addEventListener('change', e => {
     updatePreview();
 });
@@ -229,14 +228,23 @@ async function takeScreenshot() {
     screenshotStatus.textContent = "Processing...";
     canvas.classList.add('processing');
 
+    let imgEl;
     let jmp;
     if ((document.getElementById('testImg') as HTMLInputElement).checked) {
-        jmp = await Jimp.read("https://yeleha.co/NcObdsZr")
+        const url = "https://yeleha.co/NcObdsZr";
+        jmp = await Jimp.read(url);
+        imgEl = await tmpImg(url);
     } else {
         jmp = await Jimp.read(Buffer.from(img.substring('data:image/png;base64,'.length), 'base64'));
+        imgEl = videoCanvas;
     }
 
-    await processScreenshot(jmp)
+
+    try {
+        await processScreenshot(jmp, imgEl)
+    } catch (e) {
+        console.log(e);
+    }
 }
 
 async function takeVideoSnapshot(): Promise<string> {
@@ -257,6 +265,20 @@ async function takeVideoSnapshot(): Promise<string> {
     return url;
 }
 
+function tmpImg(src: string): Promise<HTMLImageElement> {
+    const img = document.createElement('img');
+    img.id = 'tmpimg-' + (Math.random() + 1).toString(36).substring(2);
+    img.crossOrigin = 'anonymous';
+    document.body.appendChild(img);
+    const promise = new Promise<HTMLImageElement>((resolve) => {
+        img.onload = function () {
+            resolve(img);
+        };
+    })
+    img.src = src;
+    return promise;
+}
+
 ipcRenderer.on('setSource', async (event, sourceId) => {
     console.log("source", sourceId)
 
@@ -269,28 +291,56 @@ ipcRenderer.on('takeScreenshot', async (event) => {
     takeScreenshot();
 })
 
-async function processScreenshot(jmp: Jimp) {
+async function processScreenshot(jmp: Jimp, img: HTMLElement) {
     console.time('processScreenshot')
+
+    const cvImg = cv.imread(img)
+
 
     console.time('processScreenshot.resized')
     const resized = await jmp.resize(Coordinates.screen.width, Coordinates.screen.height);
-    handleImageContent('resized', resized);
+    const cvResized = new cv.Mat()
+    try {
+        cv.resize(cvImg, cvResized, {width: Coordinates.screen.width, height: Coordinates.screen.height});
+    } catch (e) {
+        console.log(e);
+    }
+    handleImageContent('resized', resized, cvResized)
     console.timeEnd('processScreenshot.resized')
 
     console.time('processScreenshot.grayscale')
     const grayscale = await resized.clone()
         .grayscale();
-    handleImageContent('grayscale', grayscale);
+    const cvGrayscale = new cv.Mat()
+    try {
+        cv.cvtColor(cvResized, cvGrayscale, cv.COLOR_RGB2GRAY);
+    } catch (e) {
+        console.log(e);
+    }
+    handleImageContent('grayscale', grayscale, cvGrayscale);
     console.timeEnd('processScreenshot.grayscale')
 
     console.time('processScreenshot.inverted')
     const inverted = await grayscale.clone().invert();
-    handleImageContent('inverted', inverted);
+    const cvInverted = new cv.Mat();
+    try {
+        cv.bitwise_not(cvGrayscale, cvInverted);
+    } catch (e) {
+        console.log(e);
+    }
+    handleImageContent('inverted', inverted, cvInverted);
     console.timeEnd('processScreenshot.inverted')
 
     console.time('processScreenshot.contrast')
     const contrast = await inverted.clone().contrast(0.1)
-    handleImageContent('contrast', contrast);
+    const cvContrast = new cv.Mat();
+    try {
+        // https://stackoverflow.com/questions/39308030/how-do-i-increase-the-contrast-of-an-image-in-python-opencv
+        cv.addWeighted(cvInverted, 1.1, cvInverted, 0, 1, cvContrast);
+    } catch (e) {
+        console.log(e);
+    }
+    handleImageContent('contrast', contrast, cvContrast);
     console.timeEnd('processScreenshot.contrast')
 
     // console.time('processScreenshot.threshold')
@@ -682,11 +732,11 @@ function updatePreview() {
 
             if (drawOutlines) {
                 ctx.fillStyle = `rgb(${roleClr.r},${roleClr.g},${roleClr.b})`
-                ctx.fillRect(Coordinates.scoreboard.allies.from[0]-5, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
+                ctx.fillRect(Coordinates.scoreboard.allies.from[0] - 5, Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
             }
 
             if (drawLabels) {
-                drawLabel(`${data.allies[i].role.substring(0,1).toUpperCase()}`, {
+                drawLabel(`${data.allies[i].role.substring(0, 1).toUpperCase()}`, {
                     from: [Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
                     size: [Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight]
                 });
@@ -819,11 +869,11 @@ function updatePreview() {
 
             if (drawOutlines) {
                 ctx.fillStyle = `rgb(${roleClr.r},${roleClr.g},${roleClr.b})`
-                ctx.fillRect(Coordinates.scoreboard.enemies.from[0]-5, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
+                ctx.fillRect(Coordinates.scoreboard.enemies.from[0] - 5, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i, 5, Coordinates.scoreboard.rowHeight);
             }
 
             if (drawLabels) {
-                drawLabel(`${data.enemies[i].role.substring(0,1).toUpperCase()}`, {
+                drawLabel(`${data.enemies[i].role.substring(0, 1).toUpperCase()}`, {
                     from: [Coordinates.scoreboard.enemies.from[0], Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
                     size: [Coordinates.scoreboard.enemies.role.size[0], Coordinates.scoreboard.rowHeight]
                 });
@@ -1127,10 +1177,9 @@ ipcRenderer.on('takingScreenshot', e => {
 
 const images = new Map<string, Jimp>();
 
-async function handleImageContent(imageType: string, jimp: Jimp) {
+async function handleImageContent(imageType: string, jimp: Jimp, cvImg: cv.Mat) {
     // console.log("handleImageContent", imageType);
 
-    const content = await jimp.getBase64Async('image/png')
     screenshotStatus.textContent = "Got new screenshot";
 
     images.set(imageType, jimp);
@@ -1150,10 +1199,15 @@ async function handleImageContent(imageType: string, jimp: Jimp) {
         option.text = imageType;
         select.appendChild(option);
 
-        if (imageType === 'masked'||imageType==='contrast') {
+        if (imageType === 'masked' || imageType === 'contrast') {
             option.selected = true;
         }
     }
-    element.src = content;
+
+    const canvas = document.createElement('canvas') as HTMLCanvasElement;
+    cv.imshow(canvas, cvImg);
+    // const content = await jimp.getBase64Async('image/png')
+    element.src = canvas.toDataURL('image/png');
+
 }
 

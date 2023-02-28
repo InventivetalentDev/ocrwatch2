@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "@influxdata/influxdb-client": "^1.33.2",
+    "@techstark/opencv-js": "^4.7.0-release.1",
     "deepmerge": "^4.3.0",
     "electron-squirrel-startup": "^1.0.0",
     "google-spreadsheet": "^3.3.0",
