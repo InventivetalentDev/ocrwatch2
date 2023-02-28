@@ -808,7 +808,7 @@ function updatePreview() {
             }
 
             if (drawLabels) {
-                drawLabel(`${data.allies[i].role.substring(0, 1).toUpperCase()}`, {
+                drawLabel(`${data.allies[i].grouped?'G':''}${data.allies[i].role.substring(0, 1).toUpperCase()}`, {
                     from: [Coordinates.scoreboard.allies.from[0], Coordinates.scoreboard.allies.from[1] + Coordinates.scoreboard.rowHeight * i],
                     size: [Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight]
                 });
