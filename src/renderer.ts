@@ -75,6 +75,7 @@ const DEFAULT_DATA: GameData = {
     match: {
         info: '',
         mode: '',
+        gamemode: '',
         map: '',
         competitive: false,
         time: {
@@ -677,6 +678,7 @@ function updatePreview() {
                     const modeSplit = mapSplit[0].split("-");
                     data.match.mode = cleanupText(modeSplit[0]);
                     data.match.map = cleanupText(mapSplit[1]);
+                    data.match.gamemode = cleanupText(modeSplit[1])
                     data.match.competitive = mapSplit[0].toUpperCase().includes("COMPETITIVE");
 
                     if (prevMap && prevMap.length > 0 && data.match.map != prevMap) {

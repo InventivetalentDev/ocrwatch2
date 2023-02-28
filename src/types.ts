@@ -62,6 +62,7 @@ export interface GameData {
     match: {
         info: string,
         mode: string,
+        gamemode: string,
         map: string,
         competitive: boolean,
         time: {
