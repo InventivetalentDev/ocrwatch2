@@ -512,6 +512,10 @@ function updatePreview() {
     screenshotStatus.textContent = "Running OCR...";
     canvas.classList.add('ocring');
 
+    winButton.disabled = true;
+    drawButton.disabled = true;
+    lossButton.disabled = true;
+
 
     const drawOutlines = true;
     const drawLabels = true;
@@ -896,9 +900,9 @@ function updatePreview() {
 
             debugImage('allies-' + i + '-primary', stats1);
             debugImage('allies-' + i + '-secondary', stats2);
-            ocrPromises.push(ocr(canvas, cvName, null, 'allies-' + i + '-name')
+            ocrPromises.push(ocr(canvas, cvName, null, 'allies-' + i + '-name', 'chars')
                 .then(res => {
-                    if (res.confidence > MIN_CONFIDENCE) {
+                    if (res.confidence > MIN_CONFIDENCE||!data.allies[i].name) {
                         data.allies[i].name = cleanupText(res.text);
                     }
 
@@ -1058,9 +1062,9 @@ function updatePreview() {
             debugImage('enemies-' + i + '-name', cvName);
             debugImage('enemies-' + i + '-primary', stats1);
             debugImage('enemies-' + i + '-secondary', stats2);
-            ocrPromises.push(ocr(canvas, cvName, null, 'enemies-' + i + '-name',)
+            ocrPromises.push(ocr(canvas, cvName, null, 'enemies-' + i + '-name', 'chars')
                 .then(res => {
-                    if (res.confidence > MIN_CONFIDENCE) {
+                    if (res.confidence > MIN_CONFIDENCE||!data.enemies[i].name) {
                         data.enemies[i].name = cleanupText(res.text);
                     }
 
@@ -1207,6 +1211,10 @@ function updatePreview() {
             screenshotStatus.textContent = "Ready"
             canvas.classList.remove('ocring')
 
+            winButton.disabled = false;
+            drawButton.disabled = false;
+            lossButton.disabled = false;
+
             JsonOutput.writeJson("currentgame.json", data);
 
             ocrRunning = false
@@ -1225,6 +1233,7 @@ function writeOutputAndReset() {
         if (data.status !== 'reset' && data.status !== 'in_progress') {
             session.states.push(data.status);
             if (session.accounts && (session.lastAccount in session.accounts)) {
+                //TODO: group by role
                 session.accounts[session.lastAccount].states.push(data.status);
             }
             saveSession();
