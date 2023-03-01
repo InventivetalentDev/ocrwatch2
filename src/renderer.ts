@@ -157,7 +157,7 @@ function restoreSession(account: string) {
 const RANKS = [];
 const RANK_NAMES = ["bronze", "silver", "gold", "platinum", "diamond", "master", "grandmaster"];
 for (const name of RANK_NAMES) {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 5; i > 0; i--) {
         const rank = name + "" + i;
         RANKS.push(rank);
         const opt = document.createElement('option');
@@ -176,6 +176,9 @@ document.getElementById('rankSelect').addEventListener('change', () => {
 try {
     session = JsonOutput.readJson("session.json")
     setTimeout(() => {
+        if (session?.lastAccount) {
+            restoreSession(session.lastAccount);
+        }
         updateDataDebug();
     }, 100);
 } catch (e) {
@@ -244,6 +247,7 @@ async function takeScreenshot() {
         await processScreenshot(jmp, imgEl)
     } catch (e) {
         console.log(e);
+        ocrRunning = false;
     }
 }
 
@@ -276,9 +280,9 @@ function tmpImg(src: string): Promise<HTMLImageElement> {
         };
     })
     img.src = src;
-    setTimeout(()=>{
+    setTimeout(() => {
         img.remove();
-    },1000)
+    }, 1000)
     return promise;
 }
 
@@ -381,7 +385,12 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
     canvas.classList.remove('processing');
 
     setTimeout(() => {
-        updatePreview();
+        try {
+            updatePreview();
+        } catch (e) {
+            console.log(e);
+            ocrRunning = false;
+        }
     }, 200);
 
     // const alliesListImg = await contrast.clone()
@@ -641,6 +650,7 @@ function updatePreview() {
                 ctx.strokeRect(Coordinates.self.stats.from[0], Coordinates.self.stats.from[1] + Coordinates.self.stats.height * i,
                     Coordinates.self.stats.size[0], Coordinates.self.stats.height)
             }
+            //TODO: group stats by hero
             if (i >= data.self.stats.length - 1) {
                 data.self.stats.push({
                     value: 0,
@@ -773,9 +783,9 @@ function updatePreview() {
                 data.performance.split = split;
                 data.performance.parts = {};
                 for (let s of split) {
-                    if(!s) continue
+                    if (!s) continue
                     s = s.trim()
-                    if(s.length<=0) continue
+                    if (s.length <= 0) continue
                     const split1 = s.split(":");
                     data.performance.parts[split1[0].trim()] = split1[1].trim();
                 }
@@ -902,7 +912,7 @@ function updatePreview() {
             debugImage('allies-' + i + '-secondary', stats2);
             ocrPromises.push(ocr(canvas, cvName, null, 'allies-' + i + '-name', 'chars')
                 .then(res => {
-                    if (res.confidence > MIN_CONFIDENCE||!data.allies[i].name) {
+                    if (res.confidence > MIN_CONFIDENCE || !data.allies[i].name) {
                         data.allies[i].name = cleanupText(res.text);
                     }
 
@@ -1064,7 +1074,7 @@ function updatePreview() {
             debugImage('enemies-' + i + '-secondary', stats2);
             ocrPromises.push(ocr(canvas, cvName, null, 'enemies-' + i + '-name', 'chars')
                 .then(res => {
-                    if (res.confidence > MIN_CONFIDENCE||!data.enemies[i].name) {
+                    if (res.confidence > MIN_CONFIDENCE || !data.enemies[i].name) {
                         data.enemies[i].name = cleanupText(res.text);
                     }
 
@@ -1266,7 +1276,7 @@ function writeOutputAndReset() {
 
 function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
-    document.getElementById('gameStates').textContent = session.accounts[session.lastAccount].states.map(s => s.substring(0, 1).toUpperCase()).join('') || '';
+    document.getElementById('gameStates').textContent = `[${session.lastAccount}]: ` + session.accounts[session.lastAccount].states.map(s => s.substring(0, 1).toUpperCase()).join('') || '';
 }
 
 const winButton = document.getElementById('winButton') as HTMLButtonElement;
@@ -1321,9 +1331,9 @@ async function debugImage(id: string, jmp: Jimp | cv.Mat) {
         element.src = canvas.toDataURL('image/png');
         document.body.appendChild(canvas);
 
-        setTimeout(()=>{
+        setTimeout(() => {
             canvas.remove();
-        },1000)
+        }, 1000)
     } else {
         element.src = await jmp.getBase64Async('image/png');
     }
@@ -1386,9 +1396,9 @@ async function handleImageContent(imageType: string, jimp: Jimp, cvImg: cv.Mat) 
     // const content = await jimp.getBase64Async('image/png')
     element.src = canvas.toDataURL('image/png');
 
-    setTimeout(()=>{
+    setTimeout(() => {
         canvas.remove();
-    },1000)
+    }, 1000)
 
 }
 

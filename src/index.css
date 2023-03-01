@@ -37,6 +37,7 @@ video {
 #textDebug {
     overflow-y: scroll;
     max-height: 80vh;
+    font-size: 12px;
 }
 
 .text-debug {
@@ -44,12 +45,12 @@ video {
 }
 
 .text-debug > .left {
-    min-width: 160px;
+    min-width: 120px;
 }
 
 .text-debug > .middle {
     max-width: 50px;
-    min-width: 30px;
+    min-width: 10px;
 }
 
 .text-debug > .right {
