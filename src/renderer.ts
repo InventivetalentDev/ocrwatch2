@@ -802,16 +802,20 @@ function updatePreview() {
     ocrPromises.push(ocr(canvas, contrast, Coordinates.performance.wrapper as Rect, 'performance')
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE) {
-                data.performance.text = cleanupText(res.text);
-                const split = data.performance.text.split("|");
-                data.performance.split = split;
-                data.performance.parts = {};
-                for (let s of split) {
-                    if (!s) continue
-                    s = s.trim()
-                    if (s.length <= 0) continue
-                    const split1 = s.split(":");
-                    data.performance.parts[split1[0].trim()] = split1[1].trim();
+                try {
+                    data.performance.text = cleanupText(res.text);
+                    const split = data.performance.text.split("|");
+                    data.performance.split = split;
+                    data.performance.parts = {};
+                    for (let s of split) {
+                        if (!s) continue
+                        s = s.trim()
+                        if (s.length <= 0) continue
+                        const split1 = s.split(":");
+                        data.performance.parts[split1[0].trim()] = split1[1].trim();
+                    }
+                } catch (e) {
+                    console.log(e);
                 }
             }
         }))
@@ -954,11 +958,15 @@ function updatePreview() {
             ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i + '-primary')
                 .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
-                        data.allies[i].primary = cleanupText(res.text)
-                        const split = data.allies[i].primary.split(' ');
-                        data.allies[i].eliminations = Math.max(parseNumber(split[0]), data.allies[i].eliminations);
-                        data.allies[i].assists = Math.max(parseNumber(split[1]), data.allies[i].assists);
-                        data.allies[i].deaths = Math.max(parseNumber(split[2]), data.allies[i].deaths);
+                        try{
+                            data.allies[i].primary = cleanupText(res.text)
+                            const split = data.allies[i].primary.split(' ');
+                            data.allies[i].eliminations = Math.max(parseNumber(split[0]), data.allies[i].eliminations);
+                            data.allies[i].assists = Math.max(parseNumber(split[1]), data.allies[i].assists);
+                            data.allies[i].deaths = Math.max(parseNumber(split[2]), data.allies[i].deaths);
+                        }catch(e){
+                            console.log(e);
+                        }
                     }
 
                     drawLabel(`${data.allies[i].eliminations}`, {
@@ -976,11 +984,15 @@ function updatePreview() {
                 }))
             ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i + '-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
+                try{
                     data.allies[i].secondary = cleanupText(res.text)
                     const split = data.allies[i].secondary.split(' ');
                     data.allies[i].damage = Math.max(parseNumber(split[0]), data.allies[i].damage);
                     data.allies[i].healing = Math.max(parseNumber(split[1]), data.allies[i].healing);
                     data.allies[i].mitigated = Math.max(parseNumber(split[2]), data.allies[i].mitigated);
+                }catch (e){
+                    console.log(e);
+                }
                 }
 
                 drawLabel(`${data.allies[i].damage}`, {
@@ -1115,11 +1127,15 @@ function updatePreview() {
                 }));
             ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i + '-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
-                    data.enemies[i].primary = cleanupText(res.text)
-                    const split = data.enemies[i].primary.split(' ');
-                    data.enemies[i].eliminations = Math.max(parseNumber(split[0]), data.enemies[i].eliminations);
-                    data.enemies[i].assists = Math.max(parseNumber(split[1]), data.enemies[i].assists);
-                    data.enemies[i].deaths = Math.max(parseNumber(split[2]), data.enemies[i].deaths);
+                    try{
+                        data.enemies[i].primary = cleanupText(res.text)
+                        const split = data.enemies[i].primary.split(' ');
+                        data.enemies[i].eliminations = Math.max(parseNumber(split[0]), data.enemies[i].eliminations);
+                        data.enemies[i].assists = Math.max(parseNumber(split[1]), data.enemies[i].assists);
+                        data.enemies[i].deaths = Math.max(parseNumber(split[2]), data.enemies[i].deaths);
+                    }catch(e){
+                        console.log(e)
+                    }
                 }
                 drawLabel(`${data.enemies[i].eliminations}`, {
                     from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.elims.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.rowHeight * i],
@@ -1404,7 +1420,7 @@ ipcRenderer.on('takingScreenshot', e => {
 const images = new Map<string, Jimp>();
 
 async function handleImageContent(imageType: string, jimp: Jimp, cvImg: cv.Mat) {
-    // console.log("handleImageContent", imageType);
+    console.log("handleImageContent", imageType);
 
     screenshotStatus.textContent = "Got new screenshot";
 
