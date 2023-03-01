@@ -829,7 +829,7 @@ function updatePreview() {
             const role = resized.clone().crop(Coordinates.scoreboard.allies.role.from[0], Coordinates.scoreboard.allies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.allies.role.size[0], Coordinates.scoreboard.rowHeight);
             debugImage('allies-' + i + '-role', role);
-            const roleClr = Jimp.intToRGBA(role.getPixelColor(5, 5))
+            const roleClr = Jimp.intToRGBA(role.getPixelColor(20, 5))
             data.allies[i].roleColor = roleClr;
             data.allies[i].grouped = roleClr.g > roleClr.r && roleClr.g > roleClr.b;
 
@@ -995,7 +995,7 @@ function updatePreview() {
             const role = resized.clone().crop(Coordinates.scoreboard.enemies.role.from[0], Coordinates.scoreboard.enemies.role.from[1] + Coordinates.scoreboard.rowHeight * i,
                 Coordinates.scoreboard.enemies.role.size[0], Coordinates.scoreboard.rowHeight);
             debugImage('enemies-' + i + '-role', role);
-            const roleClr = Jimp.intToRGBA(role.getPixelColor(2, 2)) // shifted to avoid getting color from chat
+            const roleClr = Jimp.intToRGBA(role.getPixelColor(20, 50)) // shifted to avoid getting color from chat
             data.enemies[i].roleColor = roleClr;
             data.enemies[i].role = getRole(role);
 
