@@ -509,20 +509,20 @@ function getRole(jmp: Jimp): string {
 
     console.timeEnd('getRole');
 
-    console.log(topLeft);
-    console.log(topRight);
-    console.log(bottomLeft);
-    console.log(bottomRight);
+    // console.log(topLeft);
+    // console.log(topRight);
+    // console.log(bottomLeft);
+    // console.log(bottomRight);
 
     if (isWhite(topLeft) && isWhite(topRight)) { // tank or dps
         if (isWhite(bottomLeft) && isWhite(bottomRight)) {
-            console.log("dps")
+            // console.log("dps")
             return 'dps';
         }
-        console.log("tank")
+        // console.log("tank")
         return 'tank';
     }
-    console.log("support")
+    // console.log("support")
     return 'support';
 
     // return tankCheck ? 'tank' : supportCheck ? 'support' : dpsCheck ? 'dps' :  'unknown';
