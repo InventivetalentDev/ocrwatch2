@@ -1257,7 +1257,7 @@ function writeOutputAndReset() {
 
 function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
-    document.getElementById('gameStates').textContent = session?.states?.map(s => s.substring(0, 1).toUpperCase()).join('') || '';
+    document.getElementById('gameStates').textContent = session.accounts[session.lastAccount].states.map(s => s.substring(0, 1).toUpperCase()).join('') || '';
 }
 
 const winButton = document.getElementById('winButton') as HTMLButtonElement;
