@@ -38,6 +38,7 @@ export interface PlayerData {
     damage: number
     healing: number
     mitigated: number
+    vacant: boolean
 }
 
 export interface SelfStat {

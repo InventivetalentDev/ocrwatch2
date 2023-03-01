@@ -58,7 +58,8 @@ const DEFAULT_PLAYER: PlayerData = {
     deaths: 0,
     damage: 0,
     healing: 0,
-    mitigated: 0
+    mitigated: 0,
+    vacant: false
 };
 const DEFAULT_DATA: GameData = {
     times: {
@@ -154,7 +155,7 @@ function restoreSession(account: string) {
     }
 }
 
-const RANKS = [];
+const RANKS: string[] = [];
 const RANK_NAMES = ["bronze", "silver", "gold", "platinum", "diamond", "master", "grandmaster"];
 for (const name of RANK_NAMES) {
     for (let i = 5; i > 0; i--) {
@@ -168,7 +169,25 @@ for (const name of RANK_NAMES) {
 }
 document.getElementById('rankSelect').addEventListener('change', () => {
     if (session.lastAccount && session.accounts && (session.lastAccount in session.accounts)) {
-        session.accounts[session.lastAccount].rank = (document.getElementById('rankSelect') as HTMLSelectElement).value;
+        const lastRank = session.accounts[session.lastAccount].rank;
+        const newRank = (document.getElementById('rankSelect') as HTMLSelectElement).value;
+        const lastRankIndex = RANKS.indexOf(lastRank);
+        const newRankIndex = RANKS.indexOf(newRank);
+        const rankUp = newRankIndex > lastRankIndex;
+        session.accounts[session.lastAccount].rank = newRank;
+        if (rankUp) {
+            session.states.push('rankup');
+        } else {
+            session.states.push('rankdown');
+        }
+        if (session.accounts && (session.lastAccount in session.accounts)) {
+            //TODO: group by role
+            if (rankUp) {
+                session.accounts[session.lastAccount].states.push('rankup');
+            } else {
+                session.accounts[session.lastAccount].states.push('rankdown');
+            }
+        }
         saveSession()
     }
 })
@@ -306,7 +325,12 @@ let cvContrast: cv.Mat;
 async function processScreenshot(jmp: Jimp, img: HTMLElement) {
     console.time('processScreenshot')
 
-    const cvImg = cv.imread(img)
+    let cvImg;
+    try {
+        cvImg = cv.imread(img)
+    } catch (e) {
+        console.log(e);
+    }
 
     if (!cvResized) {
         cvResized = new cv.Mat()
@@ -604,7 +628,7 @@ function updatePreview() {
             }))
     }
 
-    let cvHero = cvResized.roi({
+    const cvHero = cvResized.roi({
         x: Coordinates.self.hero.from[0],
         y: Coordinates.self.hero.from[1],
         width: Coordinates.self.hero.size[0],
@@ -1276,7 +1300,23 @@ function writeOutputAndReset() {
 
 function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
-    document.getElementById('gameStates').textContent = `[${session.lastAccount}]: ` + session.accounts[session.lastAccount].states.map(s => s.substring(0, 1).toUpperCase()).join('') || '';
+
+    //TODO: show number of wins and losses
+    let statesText = `[${session.lastAccount}]: `;
+    if (session.accounts[session.lastAccount]?.states) {
+        for (const state of session.accounts[session.lastAccount].states) {
+            if (state === 'rankup') {
+                statesText += '+ ';
+                continue;
+            }
+            if (state === 'rankdown') {
+                statesText += '- ';
+                continue;
+            }
+            statesText += state.substring(0, 1).toUpperCase();
+        }
+    }
+    document.getElementById('gameStates').textContent = statesText;
 }
 
 const winButton = document.getElementById('winButton') as HTMLButtonElement;
