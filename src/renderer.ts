@@ -188,7 +188,8 @@ document.getElementById('rankSelect').addEventListener('change', () => {
                 session.accounts[session.lastAccount].states.push('rankdown');
             }
         }
-        saveSession()
+        saveSession();
+        updateDataDebug();
     }
 })
 
@@ -659,9 +660,12 @@ function updatePreview() {
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE || !data.self.hero) {
                 data.self.hero = cleanupText(res.text)
-                if (data.self.heroes.indexOf(data.self.hero) < 0) {
+                if (data.self.heroes.length <= 0 || data.self.heroes[data.self.heroes.length - 1]!==data.self.hero) {
                     data.self.heroes.push(data.self.hero);
                 }
+                // if (data.self.heroes.indexOf(data.self.hero) < 0) {
+                //     data.self.heroes.push(data.self.hero);
+                // }
             }
             if (drawLabels) {
                 drawLabel(data.self.hero, Coordinates.self.hero)
