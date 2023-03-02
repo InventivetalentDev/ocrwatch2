@@ -270,6 +270,7 @@ async function takeScreenshot() {
     } catch (e) {
         console.log(e);
         ocrRunning = false;
+        location.reload()
     }
 }
 
@@ -333,6 +334,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
         cvImg = cv.imread(img)
     } catch (e) {
         console.log(e);
+        location.reload()
     }
 
     if (!cvResized) {
@@ -355,6 +357,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
         cv.resize(cvImg, cvResized, {width: Coordinates.screen.width, height: Coordinates.screen.height});
     } catch (e) {
         console.log(e);
+        location.reload()
     }
     handleImageContent('resized', resized, cvResized)
     console.timeEnd('processScreenshot.resized')
@@ -366,6 +369,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
         cv.cvtColor(cvResized, cvGrayscale, cv.COLOR_RGB2GRAY);
     } catch (e) {
         console.log(e);
+        location.reload()
     }
     handleImageContent('grayscale', grayscale, cvGrayscale);
     console.timeEnd('processScreenshot.grayscale')
@@ -377,6 +381,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
         cv.bitwise_not(cvGrayscale, cvInverted);
     } catch (e) {
         console.log(e);
+        location.reload()
     }
     handleImageContent('inverted', inverted, cvInverted);
     console.timeEnd('processScreenshot.inverted')
@@ -389,6 +394,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
         cv.addWeighted(cvInverted, 1.1, cvInverted, 0, 1, cvContrast);
     } catch (e) {
         console.log(e);
+        location.reload()
     }
     handleImageContent('contrast', contrast, cvContrast);
     console.timeEnd('processScreenshot.contrast')
@@ -417,6 +423,7 @@ async function processScreenshot(jmp: Jimp, img: HTMLElement) {
         } catch (e) {
             console.log(e);
             ocrRunning = false;
+            location.reload()
         }
     }, 200);
 
@@ -493,7 +500,7 @@ function getNameTransform(): cv.Mat {
 function getRole(jmp: Jimp): string {
     console.time('getRole')
 
-    jmp = jmp.contrast(0.2);
+    jmp = jmp.clone().contrast(0.2);
 
 
     const topLeft = Jimp.intToRGBA(jmp.getPixelColor(6, 22));
@@ -1267,7 +1274,7 @@ function updatePreview() {
             if (data.sums.allies.assists > data.sums.enemies.assists) {
                 betterStats++;
             }
-            if (data.sums.allies.deaths > data.sums.enemies.deaths) {
+            if (data.sums.allies.deaths < data.sums.enemies.deaths) {
                 betterStats++;
             }
             if (data.sums.allies.damage > data.sums.enemies.damage) {
