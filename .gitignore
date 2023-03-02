@@ -87,3 +87,8 @@ typings/
 
 # Electron-Forge
 out/
+
+config.json
+session.json
+currentgame.json
+output/*
