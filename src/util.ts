@@ -1,5 +1,7 @@
 import cv from "@techstark/opencv-js";
-import Jimp from "jimp";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import Jimp from "jimp/es";
 import RGBA = tinycolor.ColorFormats.RGBA;
 
 export function tmpImg(src: string): Promise<HTMLImageElement> {

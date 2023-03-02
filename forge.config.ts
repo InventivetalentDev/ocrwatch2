@@ -4,9 +4,12 @@ import {MakerZIP} from '@electron-forge/maker-zip';
 import {MakerDeb} from '@electron-forge/maker-deb';
 import {MakerRpm} from '@electron-forge/maker-rpm';
 import {WebpackPlugin} from '@electron-forge/plugin-webpack';
+import {spawn} from 'child_process'
 
 import {mainConfig} from './webpack.main.config';
 import {rendererConfig} from './webpack.renderer.config';
+import * as path from "path";
+import * as fs from "fs-extra";
 
 const config: ForgeConfig = {
     packagerConfig: {},
@@ -36,41 +39,41 @@ const config: ForgeConfig = {
             },
         })
     ],
-    // hooks: {
-    //     readPackageJson: async (forgeConfig, packageJson) => {
-    //         // only copy deps if there isn't any
-    //         if (Object.keys(packageJson.dependencies).length === 0) {
-    //             const originalPackageJson = await fs.readJson(path.resolve(__dirname, 'package.json'));
-    //             const webpackConfigJs = require('./webpack.renderer.config.js');
-    //             Object.keys(webpackConfigJs.externals).forEach(package => {
-    //                 packageJson.dependencies[package] = originalPackageJson.dependencies[package];
-    //             });
-    //         }
-    //         return packageJson;
-    //     },
-    //     packageAfterPrune: async (forgeConfig, buildPath) => {
-    //         console.log(buildPath);
-    //         return new Promise((resolve, reject) => {
-    //             const npmInstall = spawn('npm', ['install'], {
-    //                 cwd: buildPath,
-    //                 stdio: 'inherit',
-    //                 shell: true
-    //             });
-    //
-    //             npmInstall.on('close', (code) => {
-    //                 if (code === 0) {
-    //                     resolve();
-    //                 } else {
-    //                     reject(new Error('process finished with error code ' + code));
-    //                 }
-    //             });
-    //
-    //             npmInstall.on('error', (error) => {
-    //                 reject(error);
-    //             });
-    //         });
-    //     }
-    // }
+    hooks: {
+        readPackageJson: async (forgeConfig, packageJson) => {
+            // only copy deps if there isn't any
+            if (Object.keys(packageJson.dependencies).length === 0) {
+                const originalPackageJson = await fs.readJson(path.resolve(__dirname, 'package.json'));
+                const webpackConfigJs = rendererConfig;
+                Object.keys(webpackConfigJs.externals).forEach(pack => {
+                    packageJson.dependencies[pack] = originalPackageJson.dependencies[pack];
+                });
+            }
+            return packageJson;
+        },
+        packageAfterPrune: async (forgeConfig, buildPath) => {
+            console.log(buildPath);
+            return new Promise((resolve, reject) => {
+                const npmInstall = spawn('npm', ['install'], {
+                    cwd: buildPath,
+                    stdio: 'inherit',
+                    shell: true
+                });
+
+                npmInstall.on('close', (code) => {
+                    if (code === 0) {
+                        resolve();
+                    } else {
+                        reject(new Error('process finished with error code ' + code));
+                    }
+                });
+
+                npmInstall.on('error', (error) => {
+                    reject(error);
+                });
+            });
+        }
+    }
 };
 
 export default config;

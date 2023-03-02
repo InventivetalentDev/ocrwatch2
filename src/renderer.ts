@@ -438,12 +438,7 @@ canvas.addEventListener('mousemove', e => {
 })
 
 
-
 let ocrRunning = false
-
-
-
-
 
 
 function updatePreview() {
@@ -1234,6 +1229,15 @@ function updatePreview() {
 
             ocrRunning = false
         })
+        .catch(e => {
+            console.log(e);
+
+            winButton.disabled = false;
+            drawButton.disabled = false;
+            lossButton.disabled = false;
+
+            ocrRunning = false
+        })
 
 }
 
@@ -1284,17 +1288,43 @@ function updateDataDebug() {
 
     //TODO: show number of wins and losses
     let statesText = `[${session.lastAccount}]: `;
+
+
     if (session.accounts[session.lastAccount]?.states) {
-        for (const state of session.accounts[session.lastAccount].states) {
+        let w = 0;
+        let l = 0;
+
+        function wrap(d: string) {
+            statesText += `[${Math.round((w / (w + l)) * 100)}%]`
+            statesText += d;
+            statesText += ' ';
+            w = 0;
+            l = 0;
+        }
+
+        let states = session.accounts[session.lastAccount].states;
+        if (states.length > 25) {
+            states = states.slice(states.length - 25, states.length);
+        }
+        for (const state of states) {
             if (state === 'rankup') {
-                statesText += '+ ';
+                wrap('+');
                 continue;
             }
             if (state === 'rankdown') {
-                statesText += '- ';
+                wrap('-')
                 continue;
             }
-            statesText += state.substring(0, 1).toUpperCase();
+            const s = state.substring(0, 1).toUpperCase();
+            statesText += s;
+            if (s === 'W') {
+                if (w++ >= 4) {
+                    wrap('|')
+                }
+            }
+            if (s === 'L') {
+                l++;
+            }
         }
     }
     document.getElementById('gameStates').textContent = statesText;
