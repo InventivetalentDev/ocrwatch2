@@ -1070,6 +1070,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/string-similarity@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@types/string-similarity/-/string-similarity-4.0.0.tgz#8cc03d5d1baad2b74530fe6c7d849d5768d391ad"
+  integrity sha512-dMS4S07fbtY1AILG/RhuwmptmzK1Ql8scmAebOTJ/8iBtK/KI17NwGwKzu1uipjj8Kk+3mfPxum56kKZE93mzQ==
+
 "@types/tesseract.js@^2.0.0":
   version "2.0.0"
   resolved "https://registry.npmjs.org/@types/tesseract.js/-/tesseract.js-2.0.0.tgz"

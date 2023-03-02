@@ -58,7 +58,8 @@ export interface GameData {
         name: string,
         hero: string,
         heroes: string[],
-        stats: SelfStat[]
+        stats: SelfStat[],
+        player: PlayerData
     },
     match: {
         info: string,

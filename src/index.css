@@ -40,6 +40,10 @@ video {
     font-size: 12px;
 }
 
+#dataDebug {
+    font-size: 11px;
+}
+
 .text-debug {
     display: block;
 }

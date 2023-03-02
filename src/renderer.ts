@@ -12,6 +12,7 @@ import {isMat, MIN_CONFIDENCE, ocr, ocr0} from "./ocr";
 import tinycolor from "tinycolor2";
 import RGBA = tinycolor.ColorFormats.RGBA;
 import cv from "@techstark/opencv-js"
+import * as stringSimilarity from 'string-similarity';
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
@@ -71,7 +72,8 @@ const DEFAULT_DATA: GameData = {
         name: '',
         hero: '',
         heroes: [],
-        stats: []
+        stats: [],
+        player: DEFAULT_PLAYER
     },
     match: {
         info: '',
@@ -1293,8 +1295,13 @@ function updatePreview() {
             } else {
                 text = '☠️ oof.';
             }
-            ctx.fillText(`🎱 says: ${text}`, Coordinates.screen.width / 2 - 180, Coordinates.screen.height / 2+20);
-            ctx.restore()
+            ctx.fillText(`🎱 says: ${text}`, Coordinates.screen.width / 2 - 180, Coordinates.screen.height / 2 + 20);
+            ctx.restore();
+
+
+            const allyNames = data.allies.map(d => d.name);
+            const bestMatch = stringSimilarity.findBestMatch(data.self.name, allyNames);
+            data.self.player = data.allies.find(d => d.name === bestMatch.bestMatch.target);
         })
         .then(() => {
 

@@ -29,6 +29,7 @@
     "@electron-forge/plugin-webpack": "^6.0.5",
     "@timfish/forge-externals-plugin": "^0.2.0",
     "@types/google-spreadsheet": "^3.3.1",
+    "@types/string-similarity": "^4.0.0",
     "@types/tesseract.js": "^2.0.0",
     "@types/tinycolor2": "^1.4.3",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
