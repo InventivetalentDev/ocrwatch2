@@ -660,7 +660,7 @@ function updatePreview() {
         .then(res => {
             if (res.confidence > MIN_CONFIDENCE || !data.self.hero) {
                 data.self.hero = cleanupText(res.text)
-                if (data.self.heroes.length <= 0 || data.self.heroes[data.self.heroes.length - 1]!==data.self.hero) {
+                if (data.self.heroes.length <= 0 || data.self.heroes[data.self.heroes.length - 1] !== data.self.hero) {
                     data.self.heroes.push(data.self.hero);
                 }
                 // if (data.self.heroes.indexOf(data.self.hero) < 0) {
@@ -962,13 +962,13 @@ function updatePreview() {
             ocrPromises.push(ocr(canvas, stats1, null, 'allies-' + i + '-primary')
                 .then(res => {
                     if (res.confidence > MIN_CONFIDENCE) {
-                        try{
+                        try {
                             data.allies[i].primary = cleanupText(res.text)
                             const split = data.allies[i].primary.split(' ');
                             data.allies[i].eliminations = Math.max(parseNumber(split[0]), data.allies[i].eliminations);
                             data.allies[i].assists = Math.max(parseNumber(split[1]), data.allies[i].assists);
                             data.allies[i].deaths = Math.max(parseNumber(split[2]), data.allies[i].deaths);
-                        }catch(e){
+                        } catch (e) {
                             console.log(e);
                         }
                     }
@@ -988,15 +988,15 @@ function updatePreview() {
                 }))
             ocrPromises.push(ocr(canvas, stats2, null, 'allies-' + i + '-secondary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
-                try{
-                    data.allies[i].secondary = cleanupText(res.text)
-                    const split = data.allies[i].secondary.split(' ');
-                    data.allies[i].damage = Math.max(parseNumber(split[0]), data.allies[i].damage);
-                    data.allies[i].healing = Math.max(parseNumber(split[1]), data.allies[i].healing);
-                    data.allies[i].mitigated = Math.max(parseNumber(split[2]), data.allies[i].mitigated);
-                }catch (e){
-                    console.log(e);
-                }
+                    try {
+                        data.allies[i].secondary = cleanupText(res.text)
+                        const split = data.allies[i].secondary.split(' ');
+                        data.allies[i].damage = Math.max(parseNumber(split[0]), data.allies[i].damage);
+                        data.allies[i].healing = Math.max(parseNumber(split[1]), data.allies[i].healing);
+                        data.allies[i].mitigated = Math.max(parseNumber(split[2]), data.allies[i].mitigated);
+                    } catch (e) {
+                        console.log(e);
+                    }
                 }
 
                 drawLabel(`${data.allies[i].damage}`, {
@@ -1131,13 +1131,13 @@ function updatePreview() {
                 }));
             ocrPromises.push(ocr(canvas, stats1, null, 'enemies-' + i + '-primary').then(res => {
                 if (res.confidence > MIN_CONFIDENCE) {
-                    try{
+                    try {
                         data.enemies[i].primary = cleanupText(res.text)
                         const split = data.enemies[i].primary.split(' ');
                         data.enemies[i].eliminations = Math.max(parseNumber(split[0]), data.enemies[i].eliminations);
                         data.enemies[i].assists = Math.max(parseNumber(split[1]), data.enemies[i].assists);
                         data.enemies[i].deaths = Math.max(parseNumber(split[2]), data.enemies[i].deaths);
-                    }catch(e){
+                    } catch (e) {
                         console.log(e)
                     }
                 }
@@ -1257,6 +1257,44 @@ function updatePreview() {
                 from: [Coordinates.scoreboard.enemies.from[0] + Coordinates.scoreboard.offsets.mitigated.x, Coordinates.scoreboard.enemies.from[1] + Coordinates.scoreboard.enemies.size[1] + 10],
                 size: [Coordinates.scoreboard.offsets.mitigated.w, Coordinates.scoreboard.rowHeight]
             }, data.sums.enemies.mitigated > data.sums.allies.mitigated ? GREEN : RED)
+
+            let betterStats = 0;
+            if (data.sums.allies.eliminations > data.sums.enemies.eliminations) {
+                betterStats++;
+            }
+            if (data.sums.allies.assists > data.sums.enemies.assists) {
+                betterStats++;
+            }
+            if (data.sums.allies.deaths > data.sums.enemies.deaths) {
+                betterStats++;
+            }
+            if (data.sums.allies.damage > data.sums.enemies.damage) {
+                betterStats++;
+            }
+            if (data.sums.allies.healing > data.sums.enemies.healing) {
+                betterStats++;
+            }
+            if (data.sums.allies.mitigated > data.sums.enemies.mitigated) {
+                betterStats++;
+            }
+
+            ctx.save()
+            ctx.font = "bold 28px Consolas"
+            ctx.fillStyle = 'black';
+            let text = '';
+            if (betterStats >= 6) {
+                text = '😎 ez win!'
+            } else if (betterStats >= 5) {
+                text = 'pretty good'
+            } else if (betterStats >= 4) {
+                text = 'winnable'
+            } else if (betterStats >= 3) {
+                text = '😬 not great'
+            } else {
+                text = '☠️ oof.';
+            }
+            ctx.fillText(`🎱 says: ${text}`, Coordinates.screen.width / 2 - 180, Coordinates.screen.height / 2+20);
+            ctx.restore()
         })
         .then(() => {
 
