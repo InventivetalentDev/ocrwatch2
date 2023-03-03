@@ -7,7 +7,6 @@ import {Coordinates} from "./coordinates";
 import Jimp from "jimp/es";
 import {GameData, GlobalSession, OcrResult, PlayerData, Rect} from "./types";
 import {
-    appDataPath,
     CSVOutput,
     getDataDir,
     GoogleSheetsOutput,

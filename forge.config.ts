@@ -41,6 +41,17 @@ const config: ForgeConfig = {
             },
         })
     ],
+    publishers: [
+        {
+            name: '@electron-forge/publisher-github',
+            config: {
+                repository: {
+                    owner: 'InventivetalentDev',
+                    name: 'ocrwatch2'
+                }
+            }
+        }
+    ],
     hooks: {
         readPackageJson: async (forgeConfig, packageJson) => {
             // only copy deps if there isn't any

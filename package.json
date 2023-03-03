@@ -1,7 +1,7 @@
 {
   "name": "ocrwatch",
   "productName": "ocrwatch",
-  "version": "23.3.5",
+  "version": "23.3.6",
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
@@ -27,6 +27,7 @@
     "@electron-forge/maker-squirrel": "^6.0.5",
     "@electron-forge/maker-zip": "^6.0.5",
     "@electron-forge/plugin-webpack": "^6.0.5",
+    "@electron-forge/publisher-github": "^6.0.5",
     "@timfish/forge-externals-plugin": "^0.2.0",
     "@types/fs-extra": "^11.0.1",
     "@types/google-spreadsheet": "^3.3.1",
