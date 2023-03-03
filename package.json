@@ -50,6 +50,7 @@
     "typescript": "~4.5.4"
   },
   "dependencies": {
+    "@electron/remote": "^2.0.9",
     "@influxdata/influxdb-client": "^1.33.2",
     "@techstark/opencv-js": "^4.7.0-release.1",
     "deepmerge": "^4.3.0",

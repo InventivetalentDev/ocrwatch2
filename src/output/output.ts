@@ -8,6 +8,24 @@ import config from "../../config.json";
 import {ClientOptions} from "@influxdata/influxdb-client";
 import {GoogleSpreadsheet} from "google-spreadsheet";
 
+ let appDataPath: string = '';
+
+export function setAppData(path: string) {
+    appDataPath = path;
+}
+
+export function getDataDir() {
+    const dir = appDataPath;
+    try{
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+        }
+    }catch (e){
+        console.log(e)
+    }
+    return dir;
+}
+
 export class Output {
 
     /**
@@ -55,7 +73,30 @@ export class JsonOutput extends Output {
         return JSON.parse(str) as T;
     }
 
+    static backup(file: string) {
+        try{
+            if (file.endsWith('.json')) {
+                fs.copyFileSync(file, file + '.backup');
+            }
+        }catch (e){
+            console.log(e);
+        }
+    }
+
     static writeJson(file: string, data: any) {
+        if(!data) {
+            console.warn("not writing empty json data to ", file);
+            return;
+        }
+        if(Array.isArray(data)&&data.length<=0) {
+            console.warn("not writing empty json array to ", file);
+            return;
+        }
+        if(Object.keys(data).length<=0) {
+            console.warn("not writing empty json object to ", file);
+            return;
+        }
+
         try {
             fs.writeFileSync(file, JSON.stringify(data, null, 2), {
                 encoding: 'utf-8',

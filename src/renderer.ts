@@ -6,7 +6,15 @@ import {Coordinates} from "./coordinates";
 // @ts-ignore
 import Jimp from "jimp/es";
 import {GameData, GlobalSession, OcrResult, PlayerData, Rect} from "./types";
-import {CSVOutput, GoogleSheetsOutput, JsonOutput, TSVOutput} from "./output/output";
+import {
+    appDataPath,
+    CSVOutput,
+    getDataDir,
+    GoogleSheetsOutput,
+    JsonOutput,
+    setAppData,
+    TSVOutput
+} from "./output/output";
 import deepmerge from "deepmerge";
 import {isMat, MIN_CONFIDENCE, ocr, ocr0} from "./ocr";
 import tinycolor from "tinycolor2";
@@ -14,9 +22,17 @@ import RGBA = tinycolor.ColorFormats.RGBA;
 import cv from "@techstark/opencv-js"
 import * as stringSimilarity from 'string-similarity';
 import {cleanupText, getNameTransform, getRole, parseNumber, tmpImg} from "./util";
+import * as path from "path";
 
 console.log('👋 This message is being logged by "renderer.js", included via webpack');
 
+ipcRenderer.on('appDataPath',(event,path)=>{
+    console.log(path);
+    setAppData(path);
+
+    loadData();
+    loadSession();
+})
 
 setTimeout(() => {
     ipcRenderer.send('initVideo');
@@ -125,23 +141,33 @@ let session: GlobalSession = {
     rank: "",
     accounts: {},
     lastRole: '',
-    statesByRole: {},
-    rankByRole: {}
+    statesByRole: {
+        "support":[],
+        "tank":[],
+        "dps":[]
+    },
+    rankByRole:{
+        "support":'',
+        "tank":'',
+        "dps":''
+    }
 }
 
 
-try {
-    data = JsonOutput.readJson("currentgame.json")
-    data.times.start = new Date(data.times.start);
-    data.times.end = new Date(data.times.end);
-    if (data.status !== 'in_progress') {
-        resetData();
+function loadData() {
+    try {
+        data = JsonOutput.readJson(path.join(getDataDir(),"currentgame.json"))
+        data.times.start = new Date(data.times.start);
+        data.times.end = new Date(data.times.end);
+        if (data.status !== 'in_progress') {
+            resetData();
+        }
+        setTimeout(() => {
+            updateDataDebug();
+        }, 500);
+    } catch (e) {
+        console.log(e)
     }
-    setTimeout(() => {
-        updateDataDebug();
-    }, 500);
-} catch (e) {
-    console.log(e)
 }
 
 function resetData() {
@@ -211,19 +237,21 @@ document.getElementById('rankSelect').addEventListener('change', () => {
     }
 })
 
-try {
-    session = JsonOutput.readJson("session.json")
-    setTimeout(() => {
-        if (session?.lastAccount) {
-            restoreSession(session.lastAccount);
-        }
-        updateDataDebug();
-    }, 100);
-} catch (e) {
-    console.log(e)
-    saveSession();
-}
+function loadSession() {
+    try {
+        session = JsonOutput.readJson(path.join(getDataDir(), "session.json"))
+        setTimeout(() => {
+            if (session?.lastAccount) {
+                restoreSession(session.lastAccount);
+            }
+            updateDataDebug();
+        }, 100);
+    } catch (e) {
+        console.log(e)
+        saveSession();
+    }
 
+}
 
 const outputs = [
     new JsonOutput(),
@@ -1245,7 +1273,8 @@ function updatePreview() {
             drawButton.disabled = false;
             lossButton.disabled = false;
 
-            JsonOutput.writeJson("currentgame.json", data);
+            JsonOutput.backup(path.join(getDataDir(), "currentgame.json"));
+            JsonOutput.writeJson(path.join(getDataDir(),"currentgame.json"), data);
 
             ocrRunning = false
         })
@@ -1262,12 +1291,14 @@ function updatePreview() {
 }
 
 function saveSession() {
-    JsonOutput.writeJson("session.json", session);
+    JsonOutput.backup(path.join(getDataDir(), "session.json"))
+    JsonOutput.writeJson(path.join(getDataDir(), "session.json"), session);
 }
 
 function writeOutputAndReset() {
     data.times.end = new Date();
-    JsonOutput.writeJson("currentgame.json", data);
+    JsonOutput.backup(path.join(getDataDir(), "currentgame.json"))
+    JsonOutput.writeJson(path.join(getDataDir(), "currentgame.json"), data);
     try {
         if (data.status !== 'reset' && data.status !== 'in_progress') {
             session.states.push(data.status);
