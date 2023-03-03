@@ -1,7 +1,7 @@
 {
   "name": "ocrwatch",
   "productName": "ocrwatch",
-  "version": "1.0.0",
+  "version": "23.3.3.0",
   "description": "My Electron application description",
   "main": ".webpack/main",
   "scripts": {
@@ -36,11 +36,13 @@
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
+    "calver-cli": "^2022.8.0",
     "css-loader": "^6.0.0",
     "electron": "23.1.0",
     "eslint": "^8.0.1",
     "eslint-plugin-import": "^2.25.0",
     "fork-ts-checker-webpack-plugin": "^7.2.13",
+    "json": "^11.0.0",
     "node-loader": "^2.0.0",
     "style-loader": "^3.0.0",
     "ts-loader": "^9.2.2",
