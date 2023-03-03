@@ -74,7 +74,8 @@ const DEFAULT_DATA: GameData = {
         hero: '',
         heroes: [],
         stats: [],
-        player: DEFAULT_PLAYER
+        player: DEFAULT_PLAYER,
+        role: ''
     },
     match: {
         info: '',
@@ -122,7 +123,10 @@ let session: GlobalSession = {
     lastAccount: "",
     states: [],
     rank: "",
-    accounts: {}
+    accounts: {},
+    lastRole: '',
+    statesByRole: {},
+    rankByRole: {}
 }
 
 
@@ -177,7 +181,12 @@ document.getElementById('rankSelect').addEventListener('change', () => {
         const lastRankIndex = RANKS.indexOf(lastRank);
         const newRankIndex = RANKS.indexOf(newRank);
         const rankUp = newRankIndex > lastRankIndex;
-        session.accounts[session.lastAccount].rank = newRank;
+        if (session.accounts && (session.lastAccount in session.accounts)) {
+            session.accounts[session.lastAccount].rank = newRank;
+            if (session.lastRole) {
+                session.accounts[session.lastAccount].rankByRole[session.lastRole] = newRank;
+            }
+        }
         if (rankUp) {
             session.states.push('rankup');
         } else {
@@ -187,8 +196,14 @@ document.getElementById('rankSelect').addEventListener('change', () => {
             //TODO: group by role
             if (rankUp) {
                 session.accounts[session.lastAccount].states.push('rankup');
+                if (session.lastRole) {
+                    session.statesByRole[session.lastRole].push('rankup');
+                }
             } else {
                 session.accounts[session.lastAccount].states.push('rankdown');
+                if (session.lastRole) {
+                    session.statesByRole[session.lastRole].push('rankdown');
+                }
             }
         }
         saveSession();
@@ -206,6 +221,7 @@ try {
     }, 100);
 } catch (e) {
     console.log(e)
+    saveSession();
 }
 
 
@@ -531,7 +547,9 @@ function updatePreview() {
                     if (!(session.lastAccount in session.accounts)) {
                         session.accounts[session.lastAccount] = {
                             states: [],
-                            rank: ''
+                            rank: '',
+                            rankByRole: {},
+                            statesByRole: {}
                         };
                     }
 
@@ -1214,6 +1232,7 @@ function updatePreview() {
             const bestMatch = stringSimilarity.findBestMatch(data.self.name, allyNames);
             data.self.player = data.allies.find(d => d.name === bestMatch.bestMatch.target);
             data.self.role = data.self.player.role
+            session.lastRole = data.self.role;
         })
         .then(() => {
 
@@ -1255,6 +1274,9 @@ function writeOutputAndReset() {
             if (session.accounts && (session.lastAccount in session.accounts)) {
                 //TODO: group by role
                 session.accounts[session.lastAccount].states.push(data.status);
+                if (session.lastRole) {
+                    session.accounts[session.lastAccount].statesByRole[session.lastRole].push(data.status);
+                }
             }
             saveSession();
         }
@@ -1263,7 +1285,7 @@ function writeOutputAndReset() {
     }
     for (const out of outputs) {
         try {
-            out.writeGame(data);
+            out.writeGameResult(data);
         } catch (e) {
             console.log(e);
         }
@@ -1288,14 +1310,14 @@ function updateDataDebug() {
     document.getElementById('dataDebug').textContent = JSON.stringify(data, null, 2);
 
     //TODO: show number of wins and losses
-    let statesText = `[${session.lastAccount}]: `;
+    let statesText = `[${session.lastAccount}/${session.lastRole}]: `;
 
 
-    if (session.accounts[session.lastAccount]?.states) {
+    if (session.accounts[session.lastAccount]?.statesByRole[session.lastRole]) {
         let w = 0;
         let l = 0;
 
-        function wrap(d: string) {
+        const wrap = (d: string) => {
             statesText += `[${Math.round((w / (w + l)) * 100)}%]`
             statesText += d;
             statesText += ' ';
@@ -1303,7 +1325,7 @@ function updateDataDebug() {
             l = 0;
         }
 
-        let states = session.accounts[session.lastAccount].states;
+        let states = session.accounts[session.lastAccount].statesByRole[session.lastRole];
         if (states.length > 25) {
             states = states.slice(states.length - 25, states.length);
         }

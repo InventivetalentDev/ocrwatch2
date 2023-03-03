@@ -102,10 +102,14 @@ export interface GameData {
 
 export interface Session {
     states: string[]
+    statesByRole: { [role: string]: string[] }
+    /* @deprecated */
     rank: string
+    rankByRole: { [role: string]: string }
 }
 
 export interface GlobalSession extends Session {
-    lastAccount: string
+    lastAccount: string;
+    lastRole: string;
     accounts: {[key: string]: Session}
 }

@@ -10,7 +10,17 @@ import {GoogleSpreadsheet} from "google-spreadsheet";
 
 export class Output {
 
-    writeGame(data: GameData): void | Promise<void> {
+    /**
+     * write current game state
+     */
+    writeGameNow(data: GameData): void | Promise<void> {
+        return null;
+    }
+
+    /**
+     * write game data at end of game (win/loss/draw)
+     */
+    writeGameResult(data: GameData): void | Promise<void> {
         return null;
     }
 
@@ -22,7 +32,7 @@ export class Output {
 
 export class JsonOutput extends Output {
 
-    writeGame(data: GameData) {
+    writeGameResult(data: GameData) {
         console.log(data)
         const name = data.times.start.toISOString().replace(/:/g, '-') + "-" + data.status;
         const out = `./output/games/game-${name}.json`;
@@ -99,7 +109,7 @@ export class RowOutput extends Output {
 
 export class TSVOutput extends RowOutput {
 
-    writeGame(data: GameData) {
+    writeGameResult(data: GameData) {
         const row = this.makeRow(data).join("\t");
         const out = "./output/games.tsv";
         if (!fs.existsSync(out)) {
@@ -112,7 +122,7 @@ export class TSVOutput extends RowOutput {
 
 export class CSVOutput extends RowOutput {
 
-    writeGame(data: GameData) {
+    writeGameResult(data: GameData) {
         const row = this.makeRow(data).join(",");
         const out = "./output/games.csv";
         if (!fs.existsSync(out)) {
@@ -140,7 +150,7 @@ export class GoogleSheetsOutput extends RowOutput {
             })
     }
 
-    async writeGame(data: GameData) {
+    async writeGameResult(data: GameData) {
         if (!this.sheet) return
         if(!config.outputs?.gsheets) return;
         const sheet = this.sheet.sheetsByIndex[0]
@@ -180,7 +190,7 @@ export class Influx1Output extends Output {
         this.influx = new influx1.InfluxDB(influxConfig);
     }
 
-    writeGame(data: GameData) {
+    writeGameResult(data: GameData) {
         if (!this.influx) return;
         //TODO
     }
@@ -200,7 +210,7 @@ export class Influx2Output extends Output {
         this.writeApi = this.influx.getWriteApi(influxConfig.org, influxConfig.bucket);
     }
 
-    writeGame(data: GameData) {
+    writeGameResult(data: GameData) {
         if (!this.influx || !this.writeApi) return;
         //TODO
     }
