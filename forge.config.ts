@@ -12,7 +12,9 @@ import * as path from "path";
 import * as fs from "fs-extra";
 
 const config: ForgeConfig = {
-    packagerConfig: {},
+    packagerConfig: {
+        asar: true
+    },
     rebuildConfig: {},
     makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
     plugins: [
