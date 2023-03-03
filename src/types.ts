@@ -48,18 +48,21 @@ export interface SelfStat {
     unit: string;
 }
 
+export type GameStatus = 'in_progress' | 'win' | 'draw' | 'loss' | 'reset'
+
 export interface GameData {
     times: {
         start: Date,
         end: Date
     },
-    status: 'in_progress' | 'win' | 'draw' | 'loss' | 'reset'
+    status: GameStatus,
     self: {
         name: string,
         hero: string,
         heroes: string[],
         stats: SelfStat[],
-        player: PlayerData
+        player: Partial<PlayerData>,
+        role: string
     },
     match: {
         info: string,
@@ -90,8 +93,8 @@ export interface GameData {
     allies: PlayerData[],
     enemies: PlayerData[],
     sums: {
-        allies: PlayerData,
-        enemies: PlayerData
+        allies: Partial<PlayerData>,
+        enemies: Partial<PlayerData>
     }
 }
 

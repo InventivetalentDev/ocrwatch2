@@ -1213,6 +1213,7 @@ function updatePreview() {
             const allyNames = data.allies.map(d => d.name);
             const bestMatch = stringSimilarity.findBestMatch(data.self.name, allyNames);
             data.self.player = data.allies.find(d => d.name === bestMatch.bestMatch.target);
+            data.self.role = data.self.player.role
         })
         .then(() => {
 
